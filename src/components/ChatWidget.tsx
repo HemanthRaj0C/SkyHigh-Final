@@ -87,7 +87,7 @@ export default function ChatWidget() {
     return (
       <button
         onClick={toggleChatWidget}
-        className="fixed bottom-6 right-6 z-30
+        className="fixed bottom-[420px] right-6 z-30
                    bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700
                    text-white p-4 rounded-full
                    shadow-2xl hover:shadow-blue-500/50
@@ -111,8 +111,8 @@ export default function ChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-30
-                    w-96 h-[600px]
+    <div className="fixed bottom-[420px] right-6 z-30
+                    w-96 h-[400px]
                     bg-black/40 backdrop-blur-xl
                     text-white rounded-2xl
                     border border-white/20

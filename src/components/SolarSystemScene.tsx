@@ -874,6 +874,20 @@ function Loader() {
 export default function SolarSystemScene() {
   const controlsRef = useRef<any>(null);
   
+  useEffect(() => {
+    const handleZoom = (event: CustomEvent) => {
+      if (controlsRef.current) {
+        const zoomFactor = event.detail.direction === 'in' ? 0.8 : 1.2;
+        const camera = controlsRef.current.object;
+        camera.position.multiplyScalar(zoomFactor);
+        controlsRef.current.update();
+      }
+    };
+
+    window.addEventListener('zoom', handleZoom as EventListener);
+    return () => window.removeEventListener('zoom', handleZoom as EventListener);
+  }, []);
+  
   return (
     <Canvas
       camera={{ position: [0, 50, 80], fov: 60 }}
