@@ -16,75 +16,59 @@ function calculateRealTimeAngle(orbitalPeriodDays: number) {
 }
 
 // Planet data with realistic-inspired but visually compressed scales
-// Famous asteroids data
-const asteroidsData = [
+// Dwarf planets data
+const dwarfPlanetsData = [
   {
     name: 'ceres',
     size: 0.47, // Largest asteroid, dwarf planet
     distance: 26.5, // Between Mars and Jupiter
     orbitSpeed: 0.005,
     rotationSpeed: 0.015,
+    texture: '/textures/ceres.jpg',
     color: '#8B7D6B',
     eccentricity: 0.076,
     inclination: 10.6,
     orbitalPeriodDays: 1680,
+    rotationPeriodHours: 9.07,
   },
   {
-    name: 'vesta',
-    size: 0.26, // Second largest asteroid
-    distance: 23.5,
-    orbitSpeed: 0.006,
-    rotationSpeed: 0.020,
-    color: '#A89F91',
-    eccentricity: 0.089,
-    inclination: 7.1,
-    orbitalPeriodDays: 1325,
+    name: 'haumea',
+    size: 0.65, // Dwarf planet, elongated shape
+    distance: 68, // Kuiper Belt
+    orbitSpeed: 0.00008,
+    rotationSpeed: 0.05,
+    texture: '/textures/haumea.jpg',
+    color: '#E8DDD3',
+    eccentricity: 0.189,
+    inclination: 28.2,
+    orbitalPeriodDays: 103468, // ~283 years
+    rotationPeriodHours: 3.9,
   },
   {
-    name: 'pallas',
-    size: 0.26, // Third largest
-    distance: 25.8,
-    orbitSpeed: 0.0055,
+    name: 'makemake',
+    size: 0.71, // Dwarf planet
+    distance: 67.5, // Kuiper Belt
+    orbitSpeed: 0.00009,
+    rotationSpeed: 0.02,
+    texture: '/textures/makemake.jpg',
+    color: '#D4A07A',
+    eccentricity: 0.159,
+    inclination: 29.0,
+    orbitalPeriodDays: 111845, // ~306 years
+    rotationPeriodHours: 22.5,
+  },
+  {
+    name: 'eris',
+    size: 0.73, // Dwarf planet, slightly larger than Pluto
+    distance: 96, // Scattered disc
+    orbitSpeed: 0.00004,
     rotationSpeed: 0.018,
-    color: '#9C8E80',
-    eccentricity: 0.231,
-    inclination: 34.8, // Highly inclined orbit
-    orbitalPeriodDays: 1686,
-  },
-  {
-    name: 'hygiea',
-    size: 0.22, // Fourth largest
-    distance: 27.2,
-    orbitSpeed: 0.0048,
-    rotationSpeed: 0.016,
-    color: '#7A6F63',
-    eccentricity: 0.117,
-    inclination: 3.8,
-    orbitalPeriodDays: 2029,
-  },
-];
-
-// Satellites data
-const satellitesData = [
-  {
-    name: 'iss',
-    displayName: 'ISS',
-    parentPlanet: 'earth',
-    size: 0.05,
-    distance: 1.3, // Relative to Earth
-    orbitSpeed: 0.15,
-    color: '#C0C0C0',
-    orbitalPeriodMinutes: 92.68,
-  },
-  {
-    name: 'hubble',
-    displayName: 'Hubble',
-    parentPlanet: 'earth',
-    size: 0.025,
-    distance: 1.35,
-    orbitSpeed: 0.14,
-    color: '#B0B0B0',
-    orbitalPeriodMinutes: 95,
+    texture: '/textures/eris.jpg',
+    color: '#E6E6FA',
+    eccentricity: 0.442, // Highly eccentric
+    inclination: 44.0, // Very inclined orbit
+    orbitalPeriodDays: 203830, // ~558 years
+    rotationPeriodHours: 25.9,
   },
 ];
 
@@ -287,12 +271,16 @@ function TexturePreloader() {
   useTexture.preload('/textures/moon.jpg');
   useTexture.preload('/textures/saturn-rings.png');
   useTexture.preload('/textures/saturn-ring-alpha.png');
+  useTexture.preload('/textures/ceres.jpg');
+  useTexture.preload('/textures/haumea.jpg');
+  useTexture.preload('/textures/makemake.jpg');
+  useTexture.preload('/textures/eris.jpg');
   return null;
 }
 
 // Asteroid Belt Component - creates thousands of small asteroids
 function AsteroidBelt() {
-  const asteroidCount = 2000;
+  const asteroidCount = 500;
   const timeSpeed = useStore((state) => state.timeSpeed);
   const asteroids = useMemo(() => {
     const temp = [];
@@ -343,9 +331,10 @@ function AsteroidBelt() {
   );
 }
 
-// Asteroid Component - for named asteroids
-function Asteroid({ data, onClick }: { data: typeof asteroidsData[0]; onClick: () => void }) {
+// Dwarf Planet Component - for named dwarf planets
+function DwarfPlanet({ data, onClick }: { data: typeof dwarfPlanetsData[0]; onClick: () => void }) {
   const meshRef = useRef<Mesh>(null);
+  const dwarfTexture = useTexture(data.texture);
   const { selectedBody, layers } = useStore();
   const timeSpeed = useStore((state) => state.timeSpeed);
   const angleRef = useRef(Math.random() * Math.PI * 2);
@@ -385,11 +374,10 @@ function Asteroid({ data, onClick }: { data: typeof asteroidsData[0]; onClick: (
       meshRef.current.position.set(x, y, zTilted);
       
       // Real-time rotation
-      if (timeSpeed === -1 && data.rotationSpeed) {
+      if (timeSpeed === -1 && data.rotationPeriodHours) {
         const now = new Date();
-        const rotationPeriodHours = (data.orbitalPeriodDays * 24) / 100; // Approximate
         const millisInHour = 3600000;
-        const rotationsCompleted = (now.getTime() % (rotationPeriodHours * millisInHour)) / (rotationPeriodHours * millisInHour);
+        const rotationsCompleted = (now.getTime() % (data.rotationPeriodHours * millisInHour)) / (data.rotationPeriodHours * millisInHour);
         meshRef.current.rotation.y = rotationsCompleted * Math.PI * 2;
       } else {
         meshRef.current.rotation.y += data.rotationSpeed * (timeSpeed === -1 ? 0 : timeSpeed);
@@ -403,7 +391,7 @@ function Asteroid({ data, onClick }: { data: typeof asteroidsData[0]; onClick: (
   });
 
   const isSelected = selectedBody === data.name;
-  if (!layers.showAsteroids) return null;
+  if (!layers.showDwarfPlanets) return null;
 
   return (
     <mesh
@@ -421,10 +409,9 @@ function Asteroid({ data, onClick }: { data: typeof asteroidsData[0]; onClick: (
         document.body.style.cursor = 'auto';
       }}
     >
-      <sphereGeometry args={[data.size, 16, 16]} />
+      <sphereGeometry args={[data.size, 32, 32]} />
       <meshStandardMaterial 
-        color={data.color} 
-        roughness={0.9}
+        map={dwarfTexture}
         emissive={isSelected ? data.color : '#000000'}
         emissiveIntensity={isSelected ? 0.3 : 0}
       />
@@ -433,15 +420,16 @@ function Asteroid({ data, onClick }: { data: typeof asteroidsData[0]; onClick: (
 }
 
 // Moon Component
-function Moon({ parentPlanet }: { parentPlanet: string }) {
+function Moon({ parentPlanet, onClick }: { parentPlanet: string; onClick: () => void }) {
   const meshRef = useRef<Mesh>(null);
   const moonTexture = useTexture('/textures/moon.jpg');
-  const { layers } = useStore();
+  const { layers, selectedBody } = useStore();
   const angleRef = useRef(0);
   const timeSpeed = useStore((state) => state.timeSpeed);
   const lastTimeSpeedRef = useRef(timeSpeed);
   const orbitalPeriodDays = 27.3; // Moon's orbital period
   const rotationPeriodHours = 27.3 * 24; // Tidally locked
+  const isSelected = selectedBody === 'moon';
 
   useFrame(() => {
     if (meshRef.current) {
@@ -492,71 +480,28 @@ function Moon({ parentPlanet }: { parentPlanet: string }) {
   if (!layers.showSatellites) return null;
 
   return (
-    <mesh ref={meshRef}>
+    <mesh 
+      ref={meshRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'auto';
+      }}
+    >
       <sphereGeometry args={[0.27, 16, 16]} />
-      <meshStandardMaterial map={moonTexture} />
+      <meshStandardMaterial 
+        map={moonTexture}
+        emissive={isSelected ? '#888888' : '#000000'}
+        emissiveIntensity={isSelected ? 0.3 : 0}
+      />
     </mesh>
-  );
-}
-
-// Satellite Component (artificial satellites)
-function Satellite({ data }: { data: typeof satellitesData[0] }) {
-  const meshRef = useRef<Mesh>(null);
-  const { layers } = useStore();
-  const angleRef = useRef(Math.random() * Math.PI * 2);
-  const timeSpeed = useStore((state) => state.timeSpeed);
-  const lastTimeSpeedRef = useRef(timeSpeed);
-  const orbitalPeriodDays = data.orbitalPeriodMinutes / (24 * 60); // Convert to days
-
-  useFrame(() => {
-    if (meshRef.current) {
-      const parentPos = planetPositions.get(data.parentPlanet);
-      if (parentPos) {
-        let angle: number;
-        
-        // Check if switching to real-time mode
-        if (timeSpeed === -1 && lastTimeSpeedRef.current !== -1) {
-          angleRef.current = calculateRealTimeAngle(orbitalPeriodDays);
-        }
-        
-        if (timeSpeed === -1) {
-          // Real-time position for satellites
-          angle = calculateRealTimeAngle(orbitalPeriodDays);
-        } else {
-          // Animated position
-          angleRef.current += data.orbitSpeed * timeSpeed;
-          angle = angleRef.current;
-        }
-        
-        lastTimeSpeedRef.current = timeSpeed;
-        
-        const x = parentPos.x + data.distance * Math.cos(angle);
-        const z = parentPos.z + data.distance * Math.sin(angle);
-        const y = parentPos.y + 0.1 * Math.sin(angle * 2);
-        meshRef.current.position.set(x, y, z);
-      }
-    }
-  });
-
-  if (!layers.showSatellites) return null;
-
-  return (
-    <group ref={meshRef}>
-      {/* Satellite body */}
-      <mesh>
-        <boxGeometry args={[data.size, data.size * 0.6, data.size * 0.8]} />
-        <meshStandardMaterial color={data.color} metalness={0.8} roughness={0.2} />
-      </mesh>
-      {/* Solar panels */}
-      <mesh position={[-data.size, 0, 0]}>
-        <boxGeometry args={[data.size * 1.5, data.size * 0.05, data.size * 0.9]} />
-        <meshStandardMaterial color="#1a1a2e" metalness={0.6} roughness={0.3} />
-      </mesh>
-      <mesh position={[data.size, 0, 0]}>
-        <boxGeometry args={[data.size * 1.5, data.size * 0.05, data.size * 0.9]} />
-        <meshStandardMaterial color="#1a1a2e" metalness={0.6} roughness={0.3} />
-      </mesh>
-    </group>
   );
 }
 
@@ -709,7 +654,7 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
           ref={ringMeshRef}
           rotation={[Math.PI / 2 + 0.467, 0, 0]}
         >
-          <ringGeometry args={[data.size * 1.4, data.size * 2.5, 64]} />
+          <ringGeometry args={[data.size * 1.4, data.size * 2, 64]} />
           <meshStandardMaterial
             map={ringsTexture}
             alphaMap={ringsAlphaTexture}
@@ -765,10 +710,15 @@ function CameraController({ controlsRef }: { controlsRef: React.RefObject<any> }
       targetY = bodyPos.y;
       targetZ = bodyPos.z;
       
-      // Find data for sizing - check planets first, then asteroids
+      // Find data for sizing - check planets first, then dwarf planets, then moon
       const planet = planetsData.find((p) => p.name === selectedBody);
-      const asteroid = asteroidsData.find((a) => a.name === selectedBody);
-      const bodyData = planet || asteroid;
+      const dwarfPlanet = dwarfPlanetsData.find((a) => a.name === selectedBody);
+      let bodyData = planet || dwarfPlanet;
+      
+      // Handle Moon specially
+      if (selectedBody === 'moon') {
+        bodyData = { name: 'moon', size: 0.27, distance: 2 };
+      }
       
       if (!bodyData) return;
       
@@ -859,39 +809,34 @@ function Scene({ controlsRef }: { controlsRef: React.RefObject<any> }) {
       {/* Asteroid Belt */}
       <AsteroidBelt />
 
-      {/* Famous Asteroids */}
-      {asteroidsData.map((asteroid) => (
-        <Asteroid
-          key={asteroid.name}
-          data={asteroid}
-          onClick={() => handlePlanetClick(asteroid.name)}
+      {/* Dwarf Planets */}
+      {dwarfPlanetsData.map((dwarf) => (
+        <DwarfPlanet
+          key={dwarf.name}
+          data={dwarf}
+          onClick={() => handlePlanetClick(dwarf.name)}
         />
       ))}
 
-      {/* Asteroid Orbit Paths */}
-      {layers.showOrbits && layers.showAsteroids && (
+      {/* Dwarf Planet Orbit Paths */}
+      {layers.showOrbits && layers.showDwarfPlanets && (
         <>
-          {asteroidsData.map((asteroid) => (
+          {dwarfPlanetsData.map((dwarf) => (
             <OrbitPath
-              key={asteroid.name}
-              radius={asteroid.distance}
-              color={asteroid.color}
-              eccentricity={asteroid.eccentricity || 0}
-              inclination={asteroid.inclination || 0}
-              planetName={asteroid.name}
-              onClick={() => handlePlanetClick(asteroid.name)}
+              key={dwarf.name}
+              radius={dwarf.distance}
+              color={dwarf.color}
+              eccentricity={dwarf.eccentricity || 0}
+              inclination={dwarf.inclination || 0}
+              planetName={dwarf.name}
+              onClick={() => handlePlanetClick(dwarf.name)}
             />
           ))}
         </>
       )}
 
       {/* Moon */}
-      <Moon parentPlanet="earth" />
-
-      {/* Satellites */}
-      {satellitesData.map((satellite) => (
-        <Satellite key={satellite.name} data={satellite} />
-      ))}
+      <Moon parentPlanet="earth" onClick={() => handlePlanetClick('moon')} />
       
       {/* Starfield */}
       <Stars radius={300} depth={50} count={2000} factor={4} saturation={0} fade speed={1} />

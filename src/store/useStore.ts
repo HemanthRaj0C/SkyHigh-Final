@@ -12,9 +12,9 @@ export type CelestialBody =
   | 'neptune'
   | 'moon'
   | 'ceres'
-  | 'vesta'
-  | 'pallas'
-  | 'hygiea'
+  | 'haumea'
+  | 'makemake'
+  | 'eris'
   | null;
 
 interface LayersState {
