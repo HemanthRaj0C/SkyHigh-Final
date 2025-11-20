@@ -74,6 +74,15 @@ canvas {
   }
 }
 
+@keyframes orbit {
+  from {
+    transform: rotate(0deg) translateY(-50px);
+  }
+  to {
+    transform: rotate(360deg) translateY(-50px);
+  }
+}
+
 .animate-slide-in-right {
   animation: slideInRight 0.3s ease-out forwards;
 }

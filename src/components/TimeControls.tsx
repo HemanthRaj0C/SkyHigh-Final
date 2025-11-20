@@ -117,11 +117,6 @@ export default function TimeControls() {
               ? "opacity-20 scale-90"
               : "opacity-40 scale-100 animate-pulse"
           }`}
-          style={{
-            animation: isPaused
-              ? "none"
-              : `pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
-          }}
         />
 
         {/* Middle ring */}
@@ -130,7 +125,10 @@ export default function TimeControls() {
             isPaused ? "border-white/10" : "border-white/30"
           } transition-all duration-500`}
         >
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          <svg
+            className="w-full h-full -rotate-90 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]"
+            viewBox="0 0 100 100"
+          >
             <circle
               cx="50"
               cy="50"
@@ -141,9 +139,6 @@ export default function TimeControls() {
               strokeLinecap="round"
               strokeDasharray={`${getSpeedPercentage() * 3.01} 301`}
               className="transition-all duration-500"
-              style={{
-                filter: "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))",
-              }}
             />
             <defs>
               <linearGradient
@@ -216,20 +211,20 @@ export default function TimeControls() {
         {/* Rotating particles effect when active */}
         {!isPaused && (
           <>
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full bg-white"
-                style={{
-                  transform: `rotate(${i * 45}deg) translateY(-50px)`,
-                  animation: `orbit ${
-                    3 / Math.abs(timeSpeed || 1)
-                  }s linear infinite`,
-                  animationDelay: `${i * 0.125}s`,
-                  opacity: 0.6,
-                }}
-              />
-            ))}
+            {[...Array(8)].map((_, i) => {
+              const rotation = i * 45;
+              const delay = i * 0.125;
+              return (
+                <div
+                  key={i}
+                  className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full bg-white opacity-60 animate-[orbit_3s_linear_infinite]"
+                  style={{
+                    transform: `rotate(${rotation}deg) translateY(-50px)`,
+                    animationDelay: `${delay}s`,
+                  }}
+                />
+              );
+            })}
           </>
         )}
       </div>
@@ -247,6 +242,12 @@ export default function TimeControls() {
             Fine Tune
           </span>
           <div className="relative flex-1">
+            <div
+              className="absolute inset-0 h-1 rounded-full overflow-hidden"
+              style={{
+                background: `linear-gradient(to right, #6b7280 0%, #6b7280 ${getSpeedPercentage()}%, rgba(255,255,255,0.1) ${getSpeedPercentage()}%, rgba(255,255,255,0.1) 100%)`,
+              }}
+            />
             <input
               type="range"
               min="0.1"
@@ -259,7 +260,7 @@ export default function TimeControls() {
                   handleSpeedChange(newValue);
                 }
               }}
-              className="w-full h-1 rounded-full appearance-none cursor-pointer
+              className="relative w-full h-1 rounded-full appearance-none cursor-pointer bg-transparent
                          [&::-webkit-slider-thumb]:appearance-none
                          [&::-webkit-slider-thumb]:w-4
                          [&::-webkit-slider-thumb]:h-4
@@ -285,19 +286,13 @@ export default function TimeControls() {
                          [&::-moz-range-thumb]:cursor-grab
                          [&::-webkit-slider-runnable-track]:h-1
                          [&::-webkit-slider-runnable-track]:rounded-full
-                         [&::-webkit-slider-runnable-track]:bg-gradient-to-r
-                         [&::-webkit-slider-runnable-track]:from-gray-500
-                         [&::-webkit-slider-runnable-track]:via-gray-500
-                         [&::-webkit-slider-runnable-track]:to-white/10
+                         [&::-webkit-slider-runnable-track]:bg-transparent
                          [&::-moz-range-track]:h-1
                          [&::-moz-range-track]:rounded-full
                          [&::-moz-range-track]:bg-white/10
                          [&::-moz-range-progress]:h-1
                          [&::-moz-range-progress]:rounded-full
                          [&::-moz-range-progress]:bg-gray-500"
-              style={{
-                background: `linear-gradient(to right, #6b7280 0%, #6b7280 ${getSpeedPercentage()}%, rgba(255,255,255,0.1) ${getSpeedPercentage()}%, rgba(255,255,255,0.1) 100%)`,
-              }}
             />
           </div>
           <span
@@ -307,17 +302,6 @@ export default function TimeControls() {
           </span>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes orbit {
-          from {
-            transform: rotate(0deg) translateY(-50px);
-          }
-          to {
-            transform: rotate(360deg) translateY(-50px);
-          }
-        }
-      `}</style>
     </div>
   );
 }
