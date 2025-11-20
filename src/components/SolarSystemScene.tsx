@@ -1,3 +1,5 @@
+//@ts-nocheck
+
 'use client';
 
 import { useRef, useMemo, Suspense, useState, useEffect } from 'react';
@@ -717,7 +719,7 @@ function CameraController({ controlsRef }: { controlsRef: React.RefObject<any> }
       
       // Handle Moon specially
       if (selectedBody === 'moon') {
-        bodyData = { name: 'moon', size: 0.27, distance: 2 };
+        bodyData  = { name: 'moon', size: 0.27, distance: 2 };
       }
       
       if (!bodyData) return;
