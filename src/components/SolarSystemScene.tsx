@@ -29,6 +29,7 @@ const planetsData = [
     eccentricity: 0.206, // Mercury has high eccentricity
     inclination: 7.0, // degrees
     orbitalPeriodDays: 88, // Real orbital period
+    rotationPeriodHours: 1407.6, // 58.6 Earth days
   },
   {
     name: 'venus',
@@ -42,6 +43,7 @@ const planetsData = [
     eccentricity: 0.007, // Venus has nearly circular orbit
     inclination: 3.4,
     orbitalPeriodDays: 225,
+    rotationPeriodHours: 5832.5, // 243 Earth days (retrograde)
   },
   {
     name: 'earth',
@@ -55,6 +57,7 @@ const planetsData = [
     eccentricity: 0.017,
     inclination: 0.0, // Reference plane
     orbitalPeriodDays: 365,
+    rotationPeriodHours: 23.93, // 24 hours
   },
   {
     name: 'mars',
@@ -68,6 +71,7 @@ const planetsData = [
     eccentricity: 0.093, // Mars has noticeable eccentricity
     inclination: 1.9,
     orbitalPeriodDays: 687,
+    rotationPeriodHours: 24.62, // Similar to Earth
   },
   {
     name: 'jupiter',
@@ -81,6 +85,7 @@ const planetsData = [
     eccentricity: 0.048,
     inclination: 1.3,
     orbitalPeriodDays: 4333,
+    rotationPeriodHours: 9.93, // Very fast rotation
   },
   {
     name: 'saturn',
@@ -95,6 +100,7 @@ const planetsData = [
     eccentricity: 0.056,
     inclination: 2.5,
     orbitalPeriodDays: 10759,
+    rotationPeriodHours: 10.66, // Fast rotation
   },
   {
     name: 'uranus',
@@ -108,6 +114,7 @@ const planetsData = [
     eccentricity: 0.047,
     inclination: 0.8,
     orbitalPeriodDays: 30687,
+    rotationPeriodHours: 17.24, // Retrograde rotation
   },
   {
     name: 'neptune',
@@ -121,6 +128,7 @@ const planetsData = [
     eccentricity: 0.009,
     inclination: 1.8,
     orbitalPeriodDays: 60190,
+    rotationPeriodHours: 16.11, // Fast rotation
   },
 ];
 
@@ -290,7 +298,18 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
     
     if (meshRef.current) {
       meshRef.current.position.set(x, y, zTilted);
-      meshRef.current.rotation.y += data.rotationSpeed;
+      
+      // Update planet rotation (spin on its axis)
+      if (timeSpeed === -1 && data.rotationPeriodHours) {
+        // Real-time rotation based on actual rotation period
+        const now = new Date();
+        const millisInHour = 3600000;
+        const rotationsCompleted = (now.getTime() % (data.rotationPeriodHours * millisInHour)) / (data.rotationPeriodHours * millisInHour);
+        meshRef.current.rotation.y = rotationsCompleted * Math.PI * 2;
+      } else {
+        // Animated rotation
+        meshRef.current.rotation.y += data.rotationSpeed * (timeSpeed === -1 ? 0 : timeSpeed);
+      }
       
       // Store the world position for camera tracking
       const worldPos = new THREE.Vector3();
