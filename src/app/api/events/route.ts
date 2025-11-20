@@ -70,10 +70,10 @@ async function aggregateEvents(): Promise<any[]> {
       countdown: getCountdown(event.startDate),
     }));
 
-    // Sort by date (upcoming first)
+    // Sort by date (most recent first - descending order)
     return enrichedEvents
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-      .slice(0, 20); // Limit to 20 most recent/upcoming events
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+      .slice(0, 20); // Limit to 20 most recent events
   } catch (error) {
     console.error('Failed to aggregate events:', error);
     return [];

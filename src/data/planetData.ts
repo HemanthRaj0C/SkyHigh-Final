@@ -602,6 +602,48 @@ export const planetsDataDetailed: Record<string, PlanetData> = {
       },
     ],
   },
+  pluto: {
+    name: 'pluto',
+    displayName: 'Pluto',
+    image: '/textures/pluto.jpg',
+    description: 'Pluto is a dwarf planet in the Kuiper Belt, once considered the ninth planet, known for its heart-shaped Tombaugh Regio feature and five moons.',
+    quickFacts: {
+      diameter: '2,376 km',
+      distanceFromSun: '5.9 billion km (39.5 AU) average',
+      orbitalPeriod: '248 Earth years',
+      rotationPeriod: '6.4 Earth days (retrograde)',
+      moons: '5 (Charon, Styx, Nix, Kerberos, Hydra)',
+      surfaceTemperature: '-223°C',
+      mass: '1.31 × 10²² kg',
+      gravity: '0.62 m/s²',
+    },
+    composition: {
+      summary: 'Rocky core surrounded by water ice mantle, surface of frozen nitrogen, methane, and carbon monoxide',
+      atmosphere: ['Thin nitrogen atmosphere', 'Methane traces', 'Carbon monoxide traces'],
+    },
+    notableFeatures: [
+      'Former ninth planet, reclassified as dwarf planet in 2006',
+      'Heart-shaped Tombaugh Regio glacier',
+      'Large moon Charon is over half Pluto\'s size',
+      'Highly elliptical orbit crosses inside Neptune\'s orbit',
+      'Explored by NASA\'s New Horizons mission in 2015',
+      'Blue haze in atmosphere from methane interaction',
+      'Active geology with nitrogen ice glaciers',
+      'Possible subsurface ocean',
+    ],
+    apis: [
+      {
+        name: 'NASA API - New Horizons',
+        url: 'https://api.nasa.gov/',
+        description: 'New Horizons mission data and Pluto imagery',
+      },
+      {
+        name: 'Minor Planet Center',
+        url: 'https://minorplanetcenter.net/',
+        description: 'Orbital elements and observation data for Pluto',
+      },
+    ],
+  },
   eris: {
     name: 'eris',
     displayName: 'Eris',

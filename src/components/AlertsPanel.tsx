@@ -35,15 +35,21 @@ export default function AlertsPanel() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const res = await fetch('/api/events');
+        const res = await fetch('/api/events', {
+          cache: 'no-store' // Prevent caching to always get fresh data
+        });
         const data = await res.json();
-        // Convert ISO strings back to Date objects
+        // Convert ISO strings back to Date objects and maintain sort order
         const eventsWithDates = (data.events || []).map((event: any) => ({
           ...event,
           startDate: new Date(event.startDate),
           endDate: event.endDate ? new Date(event.endDate) : undefined,
         }));
-        setEvents(eventsWithDates);
+        // Ensure events are sorted by most recent first (descending)
+        const sortedEvents = eventsWithDates.sort((a: any, b: any) => 
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+        );
+        setEvents(sortedEvents);
       } catch (error) {
         console.error('Failed to fetch events:', error);
         setEvents([]);

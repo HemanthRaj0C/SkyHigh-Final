@@ -9,6 +9,7 @@ import PlanetInfoPanel from '@/components/PlanetInfoPanel';
 import ChatWidget from '@/components/ChatWidget';
 import TimeControls from '@/components/TimeControls';
 import HelpPanel from '@/components/HelpPanel';
+import ApodButton from '@/components/ApodButton';
 
 const SolarSystemScene = dynamic(() => import('@/components/SolarSystemScene'), {
   ssr: false,
@@ -50,6 +51,9 @@ export default function Home() {
 
       {/* Help Panel - Top Right */}
       <HelpPanel />
+
+      {/* APOD Button - Top Center */}
+      <ApodButton />
 
       {/* Controls & Info - Bottom Left */}
       <div className="absolute bottom-4 left-4 z-10 text-white/60 text-sm space-y-1">

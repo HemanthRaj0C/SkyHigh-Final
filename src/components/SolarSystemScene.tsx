@@ -60,6 +60,19 @@ const dwarfPlanetsData = [
     rotationPeriodHours: 22.5,
   },
   {
+    name: 'pluto',
+    size: 0.72, // Dwarf planet, former 9th planet
+    distance: 65, // Kuiper Belt, highly elliptical orbit
+    orbitSpeed: 0.0001, // Adjusted to be visible at 1x speed
+    rotationSpeed: 0.018,
+    texture: '/textures/pluto.jpg',
+    color: '#D4A07A',
+    eccentricity: 0.248, // Highly eccentric orbit
+    inclination: 17.14, // Very inclined orbit
+    orbitalPeriodDays: 90560, // ~248 years
+    rotationPeriodHours: 153.3, // 6.4 Earth days (retrograde)
+  },
+  {
     name: 'eris',
     size: 0.73, // Dwarf planet, slightly larger than Pluto
     distance: 96, // Scattered disc
@@ -72,7 +85,7 @@ const dwarfPlanetsData = [
     orbitalPeriodDays: 203830, // ~558 years
     rotationPeriodHours: 25.9,
   },
-]
+];
 
 const planetsData = [
   {
@@ -274,6 +287,7 @@ function TexturePreloader() {
   useTexture.preload('/textures/saturn-rings.png');
   useTexture.preload('/textures/saturn-ring-alpha.png');
   useTexture.preload('/textures/ceres.jpg');
+  useTexture.preload('/textures/pluto.jpg');
   useTexture.preload('/textures/haumea.jpg');
   useTexture.preload('/textures/makemake.jpg');
   useTexture.preload('/textures/eris.jpg');

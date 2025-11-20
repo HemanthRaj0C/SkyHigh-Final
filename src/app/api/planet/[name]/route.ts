@@ -5,9 +5,6 @@ import { planetsDataDetailed } from '@/data/planetData';
 const cache = new Map<string, { data: any; timestamp: number }>();
 const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
 
-// NASA API key
-const NASA_API_KEY = process.env.NASA_API_KEY || 'DEMO_KEY';
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { name: string } }
@@ -31,18 +28,16 @@ export async function GET(
       return NextResponse.json(cached.data);
     }
 
-    // Enhance with live data if available
-    const [liveData, nasaImages, marsWeather] = await Promise.allSettled([
+    // Enhance with live data using free APIs only
+    const [liveData, nasaImages] = await Promise.allSettled([
       fetchLiveData(planetName),
       fetchNASAImages(planetName),
-      planetName === 'mars' ? fetchMarsWeather() : Promise.resolve(null),
     ]);
 
     const enhancedData = {
       ...planetData,
       liveData: liveData.status === 'fulfilled' ? liveData.value : null,
       recentImages: nasaImages.status === 'fulfilled' ? nasaImages.value : [],
-      weatherData: marsWeather.status === 'fulfilled' ? marsWeather.value : null,
       lastUpdated: new Date().toISOString(),
     };
 
@@ -62,19 +57,10 @@ export async function GET(
   }
 }
 
-// Fetch live astronomical data
+// Fetch live astronomical data using free APIs only
 async function fetchLiveData(planetName: string) {
   try {
-    // Fetch NASA APOD if it's related to the planet
-    const apodResponse = await fetch(
-      `https://api.nasa.gov/planetary/apod?api_key=${NASA_API_KEY}&count=1`,
-      { next: { revalidate: 86400 } } // Cache for 24 hours
-    );
-
-    const apodData = apodResponse.ok ? await apodResponse.json() : null;
-
     return {
-      astronomyPictureOfDay: apodData?.[0] || null,
       distanceFromEarth: calculateDistanceFromEarth(planetName),
       nextObservableEvent: getNextEvent(planetName),
       visibility: calculateVisibility(planetName),
@@ -87,35 +73,19 @@ async function fetchLiveData(planetName: string) {
   }
 }
 
-// Fetch NASA images for the planet
+// Fetch NASA images using free NASA Image Library API (no key required)
 async function fetchNASAImages(planetName: string): Promise<any[]> {
   try {
-    // For Mars, use rover images API
-    if (planetName === 'mars') {
-      const response = await fetch(
-        `https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/latest_photos?api_key=${NASA_API_KEY}`,
-        { next: { revalidate: 3600 } } // Cache for 1 hour
-      );
-
-      if (!response.ok) throw new Error('Failed to fetch Mars images');
-
-      const data = await response.json();
-      return data.latest_photos?.slice(0, 6).map((photo: any) => ({
-        id: photo.id,
-        url: photo.img_src,
-        camera: photo.camera.full_name,
-        date: photo.earth_date,
-        rover: photo.rover.name,
-      })) || [];
-    }
-
-    // For other planets, search NASA image library
+    // NASA Image Library is completely free, no API key needed
     const searchResponse = await fetch(
       `https://images-api.nasa.gov/search?q=${planetName}&media_type=image&page_size=6`,
       { next: { revalidate: 86400 } } // Cache for 24 hours
     );
 
-    if (!searchResponse.ok) throw new Error('Failed to fetch NASA images');
+    if (!searchResponse.ok) {
+      console.error('NASA Image Library error:', searchResponse.status);
+      return [];
+    }
 
     const searchData = await searchResponse.json();
     return searchData.collection?.items?.slice(0, 6).map((item: any) => ({
@@ -127,30 +97,6 @@ async function fetchNASAImages(planetName: string): Promise<any[]> {
   } catch (error) {
     console.error(`Failed to fetch NASA images for ${planetName}:`, error);
     return [];
-  }
-}
-
-// Fetch Mars weather data from InSight lander (if available)
-async function fetchMarsWeather() {
-  try {
-    // Note: InSight mission ended, but keeping this as example
-    // You can replace with other Mars data APIs
-    const response = await fetch(
-      `https://api.nasa.gov/insight_weather/?api_key=${NASA_API_KEY}&feedtype=json&ver=1.0`,
-      { next: { revalidate: 3600 } }
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    return {
-      source: 'NASA InSight Lander',
-      available: false, // Mission ended
-      note: 'InSight mission has concluded. Historical data available.',
-    };
-  } catch (error) {
-    console.error('Failed to fetch Mars weather:', error);
-    return null;
   }
 }
 
