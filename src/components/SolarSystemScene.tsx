@@ -24,7 +24,7 @@ const dwarfPlanetsData = [
     name: 'ceres',
     size: 0.47, // Largest asteroid, dwarf planet
     distance: 26.5, // Between Mars and Jupiter
-    orbitSpeed: 0.005,
+    orbitSpeed: 0.006, // Adjusted to be visible at 1x speed
     rotationSpeed: 0.015,
     texture: '/textures/ceres.jpg',
     color: '#8B7D6B',
@@ -37,7 +37,7 @@ const dwarfPlanetsData = [
     name: 'haumea',
     size: 0.65, // Dwarf planet, elongated shape
     distance: 68, // Kuiper Belt
-    orbitSpeed: 0.00008,
+    orbitSpeed: 0.0001, // Adjusted to be visible at 1x speed
     rotationSpeed: 0.05,
     texture: '/textures/haumea.jpg',
     color: '#E8DDD3',
@@ -50,7 +50,7 @@ const dwarfPlanetsData = [
     name: 'makemake',
     size: 0.71, // Dwarf planet
     distance: 67.5, // Kuiper Belt
-    orbitSpeed: 0.00009,
+    orbitSpeed: 0.00009, // Adjusted to be visible at 1x speed
     rotationSpeed: 0.02,
     texture: '/textures/makemake.jpg',
     color: '#D4A07A',
@@ -63,7 +63,7 @@ const dwarfPlanetsData = [
     name: 'eris',
     size: 0.73, // Dwarf planet, slightly larger than Pluto
     distance: 96, // Scattered disc
-    orbitSpeed: 0.00004,
+    orbitSpeed: 0.00005, // Adjusted to be visible at 1x speed
     rotationSpeed: 0.018,
     texture: '/textures/eris.jpg',
     color: '#E6E6FA',
@@ -72,7 +72,7 @@ const dwarfPlanetsData = [
     orbitalPeriodDays: 203830, // ~558 years
     rotationPeriodHours: 25.9,
   },
-];
+]
 
 const planetsData = [
   {
