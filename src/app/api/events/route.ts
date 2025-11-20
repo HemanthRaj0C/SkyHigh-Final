@@ -20,6 +20,8 @@ export async function GET(request: NextRequest) {
       lastUpdated: new Date().toISOString(),
       sources: [
         'NASA EONET (Earth Events)',
+        'NASA DONKI (Space Weather)',
+        'NASA NeoWs (Near-Earth Asteroids)',
         'Where The ISS At (ISS Tracking)',
       ],
     };
@@ -43,10 +45,12 @@ export async function GET(request: NextRequest) {
 // Aggregate events from multiple sources
 async function aggregateEvents(): Promise<any[]> {
   try {
-    // Fetch from real APIs only
-    const [eonetEvents, issData] = await Promise.allSettled([
+    // Fetch from real NASA APIs
+    const [eonetEvents, issData, donkiEvents, asteroidsData] = await Promise.allSettled([
       fetchNASAEarthEvents(),
       fetchISSData(),
+      fetchDONKISpaceWeather(),
+      fetchNearEarthAsteroids(),
     ]);
 
     const allEvents: AstronomicalEvent[] = [];
@@ -59,6 +63,16 @@ async function aggregateEvents(): Promise<any[]> {
     // Add ISS flyover event
     if (issData.status === 'fulfilled' && issData.value) {
       allEvents.push(issData.value);
+    }
+
+    // Add DONKI space weather events
+    if (donkiEvents.status === 'fulfilled' && donkiEvents.value.length > 0) {
+      allEvents.push(...donkiEvents.value);
+    }
+
+    // Add near-Earth asteroids
+    if (asteroidsData.status === 'fulfilled' && asteroidsData.value.length > 0) {
+      allEvents.push(...asteroidsData.value);
     }
 
     // Enrich all events with real-time status and serialize dates
@@ -193,6 +207,148 @@ function getCountdown(startDate: Date): string {
   
   const minutes = Math.floor(diff / (1000 * 60));
   return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
+// Fetch DONKI Space Weather events
+async function fetchDONKISpaceWeather(): Promise<AstronomicalEvent[]> {
+  try {
+    const NASA_API_KEY = process.env.NASA_API_KEY;
+    if (!NASA_API_KEY) return [];
+
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7); // Last 7 days
+
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+    // Fetch solar flares, CMEs, and geomagnetic storms
+    const [flaresRes, cmeRes, gstRes] = await Promise.allSettled([
+      fetch(`https://api.nasa.gov/DONKI/FLR?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}&api_key=${NASA_API_KEY}`, { next: { revalidate: 3600 } }),
+      fetch(`https://api.nasa.gov/DONKI/CME?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}&api_key=${NASA_API_KEY}`, { next: { revalidate: 3600 } }),
+      fetch(`https://api.nasa.gov/DONKI/GST?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}&api_key=${NASA_API_KEY}`, { next: { revalidate: 3600 } }),
+    ]);
+
+    const events: AstronomicalEvent[] = [];
+
+    // Process solar flares
+    if (flaresRes.status === 'fulfilled' && flaresRes.value.ok) {
+      const flares = await flaresRes.value.json();
+      flares.slice(0, 3).forEach((flare: any) => {
+        events.push({
+          id: `donki-flare-${flare.flrID}`,
+          type: 'solar_storm',
+          title: `Solar Flare ${flare.classType}`,
+          description: `${flare.classType} class solar flare from ${flare.sourceLocation}. Peak time: ${new Date(flare.peakTime).toLocaleString()}`,
+          startDate: new Date(flare.beginTime),
+          endDate: flare.endTime ? new Date(flare.endTime) : undefined,
+          visibility: 'Sun',
+          severity: flare.classType?.startsWith('X') ? 'high' : flare.classType?.startsWith('M') ? 'medium' : 'low',
+          icon: '☀️',
+        });
+      });
+    }
+
+    // Process CMEs (Coronal Mass Ejections)
+    if (cmeRes.status === 'fulfilled' && cmeRes.value.ok) {
+      const cmes = await cmeRes.value.json();
+      cmes.slice(0, 2).forEach((cme: any) => {
+        events.push({
+          id: `donki-cme-${cme.activityID}`,
+          type: 'solar_storm',
+          title: 'Coronal Mass Ejection',
+          description: `CME detected with speed ${cme.speed || 'N/A'} km/s. ${cme.note || 'Solar material ejected from Sun.'}`,
+          startDate: new Date(cme.startTime),
+          visibility: 'Sun',
+          severity: (cme.speed && cme.speed > 1000) ? 'high' : 'medium',
+          icon: '🌪️',
+        });
+      });
+    }
+
+    // Process Geomagnetic Storms
+    if (gstRes.status === 'fulfilled' && gstRes.value.ok) {
+      const storms = await gstRes.value.json();
+      storms.slice(0, 2).forEach((storm: any) => {
+        events.push({
+          id: `donki-gst-${storm.gstID}`,
+          type: 'solar_storm',
+          title: 'Geomagnetic Storm',
+          description: `G${storm.allKpIndex?.[0]?.kpIndex || '?'} level geomagnetic storm. May cause aurora at high latitudes.`,
+          startDate: new Date(storm.startTime),
+          visibility: 'Earth',
+          severity: 'medium',
+          icon: '🌌',
+        });
+      });
+    }
+
+    return events;
+  } catch (error) {
+    console.error('Failed to fetch DONKI space weather:', error);
+    return [];
+  }
+}
+
+// Fetch Near Earth Asteroids
+async function fetchNearEarthAsteroids(): Promise<AstronomicalEvent[]> {
+  try {
+    const NASA_API_KEY = process.env.NASA_API_KEY;
+    if (!NASA_API_KEY) return [];
+
+    const today = new Date();
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 7); // Next 7 days
+
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+    const response = await fetch(
+      `https://api.nasa.gov/neo/rest/v1/feed?start_date=${formatDate(today)}&end_date=${formatDate(endDate)}&api_key=${NASA_API_KEY}`,
+      { next: { revalidate: 3600 } }
+    );
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const events: AstronomicalEvent[] = [];
+
+    // Get the most notable asteroids (closest approaches)
+    const allAsteroids: any[] = [];
+    Object.values(data.near_earth_objects).forEach((dayAsteroids: any) => {
+      allAsteroids.push(...dayAsteroids);
+    });
+
+    // Sort by closest approach and take top 3
+    const closestAsteroids = allAsteroids
+      .sort((a, b) => {
+        const distA = parseFloat(a.close_approach_data[0]?.miss_distance?.kilometers || Infinity);
+        const distB = parseFloat(b.close_approach_data[0]?.miss_distance?.kilometers || Infinity);
+        return distA - distB;
+      })
+      .slice(0, 3);
+
+    closestAsteroids.forEach((asteroid: any) => {
+      const approach = asteroid.close_approach_data[0];
+      const distance = parseFloat(approach.miss_distance.kilometers);
+      const distanceLD = parseFloat(approach.miss_distance.lunar); // Lunar distance
+      const isPotentiallyHazardous = asteroid.is_potentially_hazardous_asteroid;
+
+      events.push({
+        id: `neo-${asteroid.id}`,
+        type: 'planetary',
+        title: `Asteroid ${asteroid.name}`,
+        description: `Close approach at ${distanceLD.toFixed(2)} lunar distances (${(distance / 1000000).toFixed(2)}M km). Diameter: ~${asteroid.estimated_diameter.meters.estimated_diameter_max.toFixed(0)}m. ${isPotentiallyHazardous ? '⚠️ Potentially hazardous' : 'Safe passage'}.`,
+        startDate: new Date(approach.close_approach_date_full),
+        visibility: 'Near Earth',
+        severity: isPotentiallyHazardous ? 'medium' : 'low',
+        icon: '☄️',
+      });
+    });
+
+    return events;
+  } catch (error) {
+    console.error('Failed to fetch near-Earth asteroids:', error);
+    return [];
+  }
 }
 
 
