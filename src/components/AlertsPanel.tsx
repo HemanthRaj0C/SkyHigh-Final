@@ -1,8 +1,8 @@
 'use client';
 
 import { useStore } from '@/store/useStore';
-import { mockEvents, type EventType } from '@/data/events';
-import { useState } from 'react';
+import { type EventType, type AstronomicalEvent } from '@/data/events';
+import { useState, useEffect } from 'react';
 
 const eventTypeColors = {
   meteor_shower: 'border-blue-400/30 bg-blue-500/10',
@@ -29,10 +29,38 @@ const severityColors = {
 export default function AlertsPanel() {
   const { showAlertsPanel, toggleAlertsPanel } = useStore();
   const [filterType, setFilterType] = useState<EventType | 'all'>('all');
+  const [events, setEvents] = useState<AstronomicalEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const res = await fetch('/api/events');
+        const data = await res.json();
+        // Convert ISO strings back to Date objects
+        const eventsWithDates = (data.events || []).map((event: any) => ({
+          ...event,
+          startDate: new Date(event.startDate),
+          endDate: event.endDate ? new Date(event.endDate) : undefined,
+        }));
+        setEvents(eventsWithDates);
+      } catch (error) {
+        console.error('Failed to fetch events:', error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+    // Refresh every 10 minutes
+    const interval = setInterval(fetchEvents, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const filteredEvents = filterType === 'all' 
-    ? mockEvents 
-    : mockEvents.filter(e => e.type === filterType);
+    ? events 
+    : events.filter(e => e.type === filterType);
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
@@ -61,9 +89,11 @@ export default function AlertsPanel() {
                 d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         <span className="text-sm font-medium">Alerts</span>
-        <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-          {mockEvents.length}
-        </span>
+        {events.length > 0 && (
+          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+            {events.length}
+          </span>
+        )}
       </button>
     );
   }
@@ -106,10 +136,10 @@ export default function AlertsPanel() {
                          ? 'bg-white/20 text-white' 
                          : 'bg-white/5 text-white/60 hover:bg-white/10'}`}
           >
-            All ({mockEvents.length})
+            All ({events.length})
           </button>
           {Object.keys(eventTypeLabels).map((type) => {
-            const count = mockEvents.filter(e => e.type === type).length;
+            const count = events.filter(e => e.type === type).length;
             return (
               <button
                 key={type}
@@ -128,7 +158,11 @@ export default function AlertsPanel() {
 
       {/* Events List */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {filteredEvents.length === 0 ? (
+        {loading ? (
+          <div className="text-center text-white/40 py-8">
+            <p>Loading events...</p>
+          </div>
+        ) : filteredEvents.length === 0 ? (
           <div className="text-center text-white/40 py-8">
             <p>No events found</p>
           </div>

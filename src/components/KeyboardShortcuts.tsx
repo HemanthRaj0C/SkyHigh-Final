@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { showOnboarding } from '@/utils/toast';
 
 export default function KeyboardShortcuts() {
-  const { toggleLayersPanel, toggleAlertsPanel } = useStore();
+  const { toggleLayersPanel, toggleAlertsPanel, toggleInfoPanel, setSelectedBody } = useStore();
+  const [, setHelpOpen] = useState(false);
 
   useEffect(() => {
     // Show onboarding on mount (first visit only)
@@ -24,12 +25,31 @@ export default function KeyboardShortcuts() {
         case 'i':
           toggleAlertsPanel();
           break;
+        case 'p':
+          toggleInfoPanel();
+          break;
+        case 'f':
+          // Toggle fullscreen
+          if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+          } else {
+            document.exitFullscreen();
+          }
+          break;
+        case '?':
+          // Toggle help panel
+          setHelpOpen((prev) => !prev);
+          break;
+        case 'escape':
+          // Deselect planet
+          setSelectedBody(null);
+          break;
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [toggleLayersPanel, toggleAlertsPanel]);
+  }, [toggleLayersPanel, toggleAlertsPanel, toggleInfoPanel, setSelectedBody]);
 
   return null;
 }

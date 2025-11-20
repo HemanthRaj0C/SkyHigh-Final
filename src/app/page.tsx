@@ -5,6 +5,10 @@ import ResetViewButton from '@/components/ResetViewButton';
 import LayersPanel from '@/components/LayersPanel';
 import AlertsPanel from '@/components/AlertsPanel';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
+import PlanetInfoPanel from '@/components/PlanetInfoPanel';
+import ChatWidget from '@/components/ChatWidget';
+import TimeControls from '@/components/TimeControls';
+import HelpPanel from '@/components/HelpPanel';
 
 const SolarSystemScene = dynamic(() => import('@/components/SolarSystemScene'), {
   ssr: false,
@@ -36,22 +40,26 @@ export default function Home() {
       <AlertsPanel />
 
       {/* Planet Info Panel - Right Side */}
-      <div className="absolute right-0 top-0 bottom-0 z-10">
-        {/* Planet info panel will go here */}
-      </div>
+      <PlanetInfoPanel />
 
       {/* Chat Widget - Bottom Right */}
-      <div className="absolute bottom-4 right-4 z-20">
-        {/* Chat widget will go here */}
-      </div>
+      <ChatWidget />
 
-      {/* Controls & Info - Bottom */}
+      {/* Time Controls - Bottom Center */}
+      <TimeControls />
+
+      {/* Help Panel - Top Right */}
+      <HelpPanel />
+
+      {/* Controls & Info - Bottom Left */}
       <div className="absolute bottom-4 left-4 z-10 text-white/60 text-sm space-y-1">
         <p>Mouse: Orbit | Scroll: Zoom | Click: Select</p>
         <p>
           Keyboard: 
           <kbd className="px-1.5 py-0.5 ml-1 bg-white/10 rounded text-xs">L</kbd> Layers
           <kbd className="px-1.5 py-0.5 ml-2 bg-white/10 rounded text-xs">I</kbd> Alerts
+          <kbd className="px-1.5 py-0.5 ml-2 bg-white/10 rounded text-xs">P</kbd> Info
+          <kbd className="px-1.5 py-0.5 ml-2 bg-white/10 rounded text-xs">?</kbd> Help
         </p>
       </div>
     </main>
