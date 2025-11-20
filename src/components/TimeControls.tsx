@@ -1,152 +1,323 @@
-'use client';
+"use client";
 
-import { useStore } from '@/store/useStore';
-import { useState } from 'react';
+import { useStore } from "@/store/useStore";
+import { useState } from "react";
 
 const speedPresets = [
-  { value: 0, label: 'Pause', icon: '⏸' },
-  { value: -1, label: 'Real-Time', icon: '🌍' }, // Special value for astronomical real-time
-  { value: 0.5, label: 'Slow', icon: '🐌' },
-  { value: 5, label: 'Fast', icon: '⚡' },
-  { value: 10, label: 'Faster', icon: '🚀' },
+  { value: 0, label: "Pause", multiplier: 0 },
+  { value: -1, label: "Real-Time", multiplier: -1 },
+  { value: 0.5, label: "Slow", multiplier: 0.5 },
+  { value: 5, label: "Fast", multiplier: 5 },
+  { value: 10, label: "Faster", multiplier: 10 },
 ];
 
 export default function TimeControls() {
   const { timeSpeed, setTimeSpeed } = useStore();
-  const [expanded, setExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [previousSpeed, setPreviousSpeed] = useState(1);
 
-  const currentPreset = speedPresets.find(p => p.value === timeSpeed);
-  const speedLabel = currentPreset ? currentPreset.label : timeSpeed === 0 ? 'Paused' : `${timeSpeed}x`;
-  const currentIcon = currentPreset?.icon || (timeSpeed === 0 ? '⏸' : '⚡');
+  const isPaused = timeSpeed === 0;
+
+  const togglePlayPause = () => {
+    if (isPaused) {
+      setTimeSpeed(previousSpeed);
+    } else {
+      setPreviousSpeed(timeSpeed);
+      setTimeSpeed(0);
+    }
+  };
+
+  const handleSpeedChange = (newSpeed: number) => {
+    if (newSpeed !== 0) {
+      setPreviousSpeed(newSpeed);
+    }
+    setTimeSpeed(newSpeed);
+  };
+
+  const getSpeedPercentage = () => {
+    if (timeSpeed === 0) return 0;
+    const max = 10;
+    return Math.min((Math.abs(timeSpeed) / max) * 100, 100);
+  };
+
+  const getSpeedColor = () => {
+    return "from-gray-400 to-gray-500";
+  };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20">
-      {expanded ? (
-        <div className="bg-gradient-to-r from-slate-900/95 via-slate-800/95 to-slate-900/95 
-                        backdrop-blur-xl border border-white/20 rounded-2xl p-5 
-                        shadow-2xl shadow-black/50 min-w-[500px]">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 
-                              flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-lg">Time Speed</h3>
-                <p className="text-white/50 text-xs">Control orbital animation</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setExpanded(false)}
-              className="text-white/60 hover:text-white hover:bg-white/10 p-2 rounded-lg transition-all"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    <div
+      className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Floating Speed Presets - Only show on hover */}
+      <div
+        className={`transition-all duration-500 ease-out ${
+          isHovered
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+      >
+        {/* UPDATED: Increased gap-2 to gap-4 and p-2 to p-3 for better spacing */}
+        <div className="flex items-center gap-4 bg-black/60 backdrop-blur-2xl rounded-full p-3 border border-white/10 shadow-2xl">
+          {speedPresets.map((preset, idx) => {
+            const isActive = timeSpeed === preset.value;
+
+            return (
+              <button
+                key={idx}
+                onClick={() => handleSpeedChange(preset.value)}
+                // UPDATED: Reduced padding (px-6 py-3), added min-width, reduced active scale
+                className={`group relative px-6 py-3 min-w-[90px] rounded-full transition-all duration-300 border-2 ${
+                  isActive
+                    ? "scale-105 shadow-lg border-gray-400 bg-gradient-to-br from-gray-400/20 to-gray-500/20"
+                    : "border-transparent hover:border-gray-400/30 hover:bg-gray-400/10 hover:scale-105"
+                }`}
+              >
+                <div className="flex flex-col items-center gap-0.5">
+                  <span
+                    className={`text-sm font-bold ${
+                      isActive
+                        ? "text-white"
+                        : "text-white/60 group-hover:text-white/90"
+                    } transition-colors duration-300`}
+                  >
+                    {preset.label}
+                  </span>
+                  {preset.value !== -1 && preset.value !== 0 && (
+                    <span
+                      className={`text-xs ${
+                        isActive
+                          ? "text-white/80"
+                          : "text-white/40 group-hover:text-white/60"
+                      }`}
+                    >
+                      {preset.value}x
+                    </span>
+                  )}
+                </div>
+
+                {isActive && (
+                  <div
+                    className={`absolute -inset-1 rounded-full bg-gradient-to-br from-gray-400 to-gray-500 opacity-20 blur-xl animate-pulse`}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Control Orb */}
+      <div className="relative">
+        {/* Outer glow ring */}
+        <div
+          className={`absolute inset-0 rounded-full bg-gradient-to-br ${getSpeedColor()} blur-xl transition-all duration-700 ${
+            isPaused
+              ? "opacity-20 scale-90"
+              : "opacity-40 scale-100 animate-pulse"
+          }`}
+          style={{
+            animation: isPaused
+              ? "none"
+              : `pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite`,
+          }}
+        />
+
+        {/* Middle ring */}
+        <div
+          className={`absolute inset-0 rounded-full border-2 ${
+            isPaused ? "border-white/10" : "border-white/30"
+          } transition-all duration-500`}
+        >
+          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="48"
+              fill="none"
+              stroke="url(#speedGradient)"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray={`${getSpeedPercentage() * 3.01} 301`}
+              className="transition-all duration-500"
+              style={{
+                filter: "drop-shadow(0 0 8px rgba(59, 130, 246, 0.5))",
+              }}
+            />
+            <defs>
+              <linearGradient
+                id="speedGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" stopColor="#9ca3af" />
+                <stop offset="50%" stopColor="#9ca3af" />
+                <stop offset="100%" stopColor="#6b7280" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        {/* Main button */}
+        <button
+          onClick={togglePlayPause}
+          className="relative w-20 h-20 rounded-full bg-gradient-to-br from-black/90 via-gray-900/90 to-black/90 backdrop-blur-xl border border-white/20 shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 group"
+        >
+          {/* Inner gradient overlay */}
+          <div
+            className={`absolute inset-2 rounded-full bg-gradient-to-br ${getSpeedColor()} opacity-10 group-hover:opacity-20 transition-opacity duration-300`}
+          />
+
+          {/* Play/Pause Icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            {isPaused ? (
+              <svg
+                className="w-8 h-8 text-white drop-shadow-lg transition-transform duration-300 group-hover:scale-110"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 5v14l11-7z" />
               </svg>
-            </button>
+            ) : (
+              <svg
+                className="w-8 h-8 text-white drop-shadow-lg transition-transform duration-300 group-hover:scale-110"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+              </svg>
+            )}
           </div>
 
-          {/* Speed Presets */}
-          <div className="grid grid-cols-5 gap-2 mb-4">
-            {speedPresets.map((preset) => {
-              const isSelected = timeSpeed === preset.value;
-              const displayIcon = preset.value === 0 
-                ? (timeSpeed === 0 ? '⏸' : '▶️') 
-                : preset.icon;
-              const displayLabel = preset.value === 0
-                ? (timeSpeed === 0 ? 'Pause' : 'Play')
-                : preset.label;
-              
-              return (
-                <button
-                  key={preset.value}
-                  onClick={() => {
-                    if (preset.value === 0) {
-                      // Toggle between pause and previous speed (or 1)
-                      setTimeSpeed(timeSpeed === 0 ? 1 : 0);
-                    } else {
-                      setTimeSpeed(preset.value);
-                    }
-                  }}
-                  className={`p-3 rounded-xl transition-all duration-200 border-2
-                             ${isSelected
-                               ? 'bg-blue-500/20 border-blue-400 scale-105 shadow-lg shadow-blue-500/20'
-                               : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                             }`}
+          {/* Speed Display */}
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full mt-2">
+            <div className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-xl border border-white/20 shadow-lg">
+              <div className="flex flex-col items-center">
+                <span className="text-white/50 text-[9px] font-medium uppercase tracking-wider">
+                  Speed
+                </span>
+                <span
+                  className={`font-bold text-sm bg-gradient-to-r ${getSpeedColor()} bg-clip-text text-transparent`}
                 >
-                  <div className="text-2xl mb-1">{displayIcon}</div>
-                  <div className="text-white text-xs font-medium">{displayLabel}</div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Custom Speed Slider */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-white/70 text-sm font-medium">Custom Speed</label>
-              <span className="text-blue-400 font-bold text-sm">{timeSpeed}x</span>
+                  {isPaused
+                    ? "Paused"
+                    : timeSpeed === -1
+                    ? "Real"
+                    : `${timeSpeed}×`}
+                </span>
+              </div>
             </div>
+          </div>
+        </button>
+
+        {/* Rotating particles effect when active */}
+        {!isPaused && (
+          <>
+            {[...Array(8)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute top-1/2 left-1/2 w-1 h-1 rounded-full bg-white"
+                style={{
+                  transform: `rotate(${i * 45}deg) translateY(-50px)`,
+                  animation: `orbit ${
+                    3 / Math.abs(timeSpeed || 1)
+                  }s linear infinite`,
+                  animationDelay: `${i * 0.125}s`,
+                  opacity: 0.6,
+                }}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      {/* Fine-tune slider (appears on hover) */}
+      <div
+        className={`transition-all duration-500 ease-out ${
+          isHovered
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center gap-3 bg-black/60 backdrop-blur-2xl rounded-full px-6 py-3 border border-white/10 shadow-2xl min-w-[320px]">
+          <span className="text-white/50 text-xs font-medium whitespace-nowrap">
+            Fine Tune
+          </span>
+          <div className="relative flex-1">
             <input
               type="range"
-              min="0"
-              max="100"
-              value={timeSpeed}
-              onChange={(e) => setTimeSpeed(Number(e.target.value))}
-              className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer
+              min="0.1"
+              max="10"
+              step="0.1"
+              value={isPaused ? previousSpeed : Math.abs(timeSpeed)}
+              onChange={(e) => {
+                const newValue = Number(e.target.value);
+                if (newValue > 0) {
+                  handleSpeedChange(newValue);
+                }
+              }}
+              className="w-full h-1 rounded-full appearance-none cursor-pointer
                          [&::-webkit-slider-thumb]:appearance-none
                          [&::-webkit-slider-thumb]:w-4
                          [&::-webkit-slider-thumb]:h-4
                          [&::-webkit-slider-thumb]:rounded-full
-                         [&::-webkit-slider-thumb]:bg-blue-500
+                         [&::-webkit-slider-thumb]:bg-gradient-to-br
+                         [&::-webkit-slider-thumb]:from-gray-300
+                         [&::-webkit-slider-thumb]:to-gray-400
                          [&::-webkit-slider-thumb]:shadow-lg
-                         [&::-webkit-slider-thumb]:shadow-blue-500/50
-                         [&::-webkit-slider-thumb]:cursor-pointer
+                         [&::-webkit-slider-thumb]:shadow-gray-500/50
+                         [&::-webkit-slider-thumb]:cursor-grab
+                         [&::-webkit-slider-thumb]:active:cursor-grabbing
+                         [&::-webkit-slider-thumb]:hover:scale-125
+                         [&::-webkit-slider-thumb]:transition-transform
+                         [&::-webkit-slider-thumb]:-mt-[6px]
                          [&::-moz-range-thumb]:w-4
                          [&::-moz-range-thumb]:h-4
                          [&::-moz-range-thumb]:rounded-full
-                         [&::-moz-range-thumb]:bg-blue-500
+                         [&::-moz-range-thumb]:bg-gradient-to-br
+                         [&::-moz-range-thumb]:from-gray-300
+                         [&::-moz-range-thumb]:to-gray-400
                          [&::-moz-range-thumb]:border-0
                          [&::-moz-range-thumb]:shadow-lg
-                         [&::-moz-range-thumb]:cursor-pointer"
+                         [&::-moz-range-thumb]:cursor-grab
+                         [&::-webkit-slider-runnable-track]:h-1
+                         [&::-webkit-slider-runnable-track]:rounded-full
+                         [&::-webkit-slider-runnable-track]:bg-gradient-to-r
+                         [&::-webkit-slider-runnable-track]:from-gray-500
+                         [&::-webkit-slider-runnable-track]:via-gray-500
+                         [&::-webkit-slider-runnable-track]:to-white/10
+                         [&::-moz-range-track]:h-1
+                         [&::-moz-range-track]:rounded-full
+                         [&::-moz-range-track]:bg-white/10
+                         [&::-moz-range-progress]:h-1
+                         [&::-moz-range-progress]:rounded-full
+                         [&::-moz-range-progress]:bg-gray-500"
+              style={{
+                background: `linear-gradient(to right, #6b7280 0%, #6b7280 ${getSpeedPercentage()}%, rgba(255,255,255,0.1) ${getSpeedPercentage()}%, rgba(255,255,255,0.1) 100%)`,
+              }}
             />
-            <div className="flex justify-between text-xs text-white/40">
-              <span>Paused</span>
-              <span>Maximum Speed</span>
-            </div>
           </div>
+          <span
+            className={`text-xs font-bold min-w-[42px] text-right bg-gradient-to-r ${getSpeedColor()} bg-clip-text text-transparent`}
+          >
+            {(isPaused ? previousSpeed : timeSpeed).toFixed(1)}x
+          </span>
         </div>
-      ) : (
-        <button
-          onClick={() => setExpanded(true)}
-          className="group bg-gradient-to-r from-slate-900/90 via-slate-800/90 to-slate-900/90 
-                     backdrop-blur-xl border border-white/20 rounded-full px-6 py-3
-                     shadow-2xl shadow-black/50 hover:shadow-blue-500/20
-                     transition-all duration-300 hover:scale-105
-                     flex items-center gap-4"
-        >
-          {/* Speed Icon */}
-          <div className="text-2xl">{currentIcon}</div>
-          
-          {/* Speed Info */}
-          <div className="flex flex-col items-start">
-            <span className="text-white/50 text-xs font-medium">Speed</span>
-            <span className="text-white font-bold text-sm">{speedLabel}</span>
-          </div>
+      </div>
 
-          {/* Expand Icon */}
-          <div className="w-8 h-8 rounded-full bg-white/10 group-hover:bg-white/20 
-                          flex items-center justify-center transition-all">
-            <svg className="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </button>
-      )}
+      <style jsx>{`
+        @keyframes orbit {
+          from {
+            transform: rotate(0deg) translateY(-50px);
+          }
+          to {
+            transform: rotate(360deg) translateY(-50px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
