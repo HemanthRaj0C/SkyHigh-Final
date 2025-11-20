@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useMemo, Suspense } from 'react';
+import { useRef, useMemo, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { OrbitControls, Stars, useTexture } from '@react-three/drei';
 import { Mesh, Group, BufferGeometry, LineBasicMaterial, Line } from 'three';
@@ -17,6 +17,9 @@ const planetsData = [
     rotationSpeed: 0.004,
     texture: '/textures/mercury.jpg',
     color: '#8C7853',
+    initialAngle: 0,
+    eccentricity: 0.206, // Mercury has high eccentricity
+    inclination: 7.0, // degrees
   },
   {
     name: 'venus',
@@ -26,6 +29,9 @@ const planetsData = [
     rotationSpeed: 0.002,
     texture: '/textures/venus.jpg',
     color: '#FFC649',
+    initialAngle: 0,
+    eccentricity: 0.007, // Venus has nearly circular orbit
+    inclination: 3.4,
   },
   {
     name: 'earth',
@@ -35,6 +41,9 @@ const planetsData = [
     rotationSpeed: 0.02,
     texture: '/textures/earth.jpg',
     color: '#4169E1',
+    initialAngle: 0,
+    eccentricity: 0.017,
+    inclination: 0.0, // Reference plane
   },
   {
     name: 'mars',
@@ -44,6 +53,9 @@ const planetsData = [
     rotationSpeed: 0.018,
     texture: '/textures/mars.jpg',
     color: '#CD5C5C',
+    initialAngle: 0,
+    eccentricity: 0.093, // Mars has noticeable eccentricity
+    inclination: 1.9,
   },
   {
     name: 'jupiter',
@@ -53,6 +65,9 @@ const planetsData = [
     rotationSpeed: 0.04,
     texture: '/textures/jupiter.jpg',
     color: '#DAA520',
+    initialAngle: 0,
+    eccentricity: 0.048,
+    inclination: 1.3,
   },
   {
     name: 'saturn',
@@ -63,6 +78,9 @@ const planetsData = [
     texture: '/textures/saturn.jpg',
     color: '#F4E7C6',
     hasRings: true,
+    initialAngle: 0,
+    eccentricity: 0.056,
+    inclination: 2.5,
   },
   {
     name: 'uranus',
@@ -72,6 +90,9 @@ const planetsData = [
     rotationSpeed: 0.03,
     texture: '/textures/uranus.jpg',
     color: '#4FD0E7',
+    initialAngle: 0,
+    eccentricity: 0.047,
+    inclination: 0.8,
   },
   {
     name: 'neptune',
@@ -81,34 +102,70 @@ const planetsData = [
     rotationSpeed: 0.032,
     texture: '/textures/neptune.jpg',
     color: '#4169E1',
+    initialAngle: 0,
+    eccentricity: 0.009,
+    inclination: 1.8,
   },
 ];
 
-// Satellites data
-const satellitesData = [
-  { name: 'moon', parent: 'earth', size: 0.27, distance: 2.5, orbitSpeed: 0.05, texture: '/textures/moon.jpg' },
-  { name: 'iss', parent: 'earth', size: 0.05, distance: 1.3, orbitSpeed: 0.1, color: '#FFFFFF' },
-];
-
-// Spacecraft data
-const spacecraftData = [
-  { name: 'parker', parent: 'sun', size: 0.03, distance: 3, orbitSpeed: 0.15, color: '#FF4500' },
-];
-
-// Orbit Path Component
-function OrbitPath({ radius, color = '#ffffff' }: { radius: number; color?: string }) {
+// Orbit Path Component - Now with elliptical orbits, inclination, and click support
+function OrbitPath({ 
+  radius, 
+  color = '#ffffff', 
+  eccentricity = 0,
+  inclination = 0,
+  planetName,
+  onClick 
+}: { 
+  radius: number; 
+  color?: string; 
+  eccentricity?: number;
+  inclination?: number;
+  planetName: string;
+  onClick: () => void;
+}) {
   const points = [];
-  const segments = 128;
+  const segments = 256; // More segments for smoother ellipses
+  
+  // Calculate semi-major and semi-minor axes for ellipse
+  const a = radius; // semi-major axis
+  const b = radius * Math.sqrt(1 - eccentricity * eccentricity); // semi-minor axis
+  const c = radius * eccentricity; // focal point offset
+  const inclinationRad = (inclination * Math.PI) / 180; // Convert to radians
   
   for (let i = 0; i <= segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
-    points.push(new THREE.Vector3(Math.cos(angle) * radius, 0, Math.sin(angle) * radius));
+    // Ellipse formula with sun at one focus
+    const x = (a * Math.cos(angle)) - c;
+    const z = b * Math.sin(angle);
+    // Apply orbital inclination (tilt)
+    const y = z * Math.sin(inclinationRad);
+    const zTilted = z * Math.cos(inclinationRad);
+    points.push(new THREE.Vector3(x, y, zTilted));
   }
   
   const geometry = new BufferGeometry().setFromPoints(points);
-  const material = new LineBasicMaterial({ color, opacity: 0.15, transparent: true });
+  const material = new LineBasicMaterial({ color, opacity: 0.3, transparent: true, linewidth: 2 });
+  const line = new Line(geometry, material);
   
-  return <primitive object={new Line(geometry, material)} />;
+  return (
+    <primitive 
+      object={line}
+      onClick={(e: any) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      onPointerOver={(e: any) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+        material.opacity = 0.6;
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'auto';
+        material.opacity = 0.3;
+      }}
+    />
+  );
 }
 
 // Preload all textures at once
@@ -163,19 +220,7 @@ function Sun({ onClick }: { onClick: () => void }) {
         <pointLight intensity={2} distance={200} decay={1} />
       </mesh>
       
-      {/* Selection highlight for sun */}
-      {isSelected && (
-        <>
-          <mesh scale={1.1}>
-            <sphereGeometry args={[3, 32, 32]} />
-            <meshBasicMaterial color="#FFD700" transparent opacity={0.2} />
-          </mesh>
-          <mesh scale={1.15}>
-            <sphereGeometry args={[3, 32, 32]} />
-            <meshBasicMaterial color="#FFD700" transparent opacity={0.1} />
-          </mesh>
-        </>
-      )}
+      {/* Selection highlight removed for cleaner look */}
     </>
   );
 }
@@ -191,12 +236,28 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
   const ringsTexture = data.hasRings ? useTexture('/textures/saturn-rings.png') : null;
   const { selectedBody, layers } = useStore();
   const timeSpeed = useStore((state) => state.timeSpeed);
+  const angleRef = useRef(data.initialAngle || 0);
+  
+  // Calculate elliptical orbit parameters
+  const a = data.distance; // semi-major axis
+  const b = data.distance * Math.sqrt(1 - (data.eccentricity || 0) * (data.eccentricity || 0)); // semi-minor axis
+  const c = data.distance * (data.eccentricity || 0); // focal point offset
+  const inclinationRad = ((data.inclination || 0) * Math.PI) / 180; // Convert to radians
   
   useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += data.orbitSpeed * timeSpeed;
-    }
+    // Update orbital angle
+    angleRef.current += data.orbitSpeed * timeSpeed;
+    
+    // Calculate elliptical position with sun at one focus
+    const angle = angleRef.current;
+    const x = (a * Math.cos(angle)) - c;
+    const z = b * Math.sin(angle);
+    // Apply orbital inclination (tilt)
+    const y = z * Math.sin(inclinationRad);
+    const zTilted = z * Math.cos(inclinationRad);
+    
     if (meshRef.current) {
+      meshRef.current.position.set(x, y, zTilted);
       meshRef.current.rotation.y += data.rotationSpeed;
       
       // Store the world position for camera tracking
@@ -225,32 +286,16 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
         }}
       >
         <sphereGeometry args={[data.size, 32, 32]} />
-        <meshStandardMaterial map={planetTexture} />
+        <meshStandardMaterial 
+          map={planetTexture}
+        />
       </mesh>
       
-      {/* Selection highlight - animated glow */}
-      {isSelected && (
-        <>
-          <mesh position={[data.distance, 0, 0]} scale={1.15}>
-            <sphereGeometry args={[data.size, 32, 32]} />
-            <meshBasicMaterial color="#4DA6FF" transparent opacity={0.3} />
-          </mesh>
-          <mesh position={[data.distance, 0, 0]} scale={1.2}>
-            <sphereGeometry args={[data.size, 32, 32]} />
-            <meshBasicMaterial color="#4DA6FF" transparent opacity={0.15} />
-          </mesh>
-          <pointLight 
-            position={[data.distance, 0, 0]} 
-            intensity={1.5} 
-            distance={data.size * 3} 
-            color="#4DA6FF" 
-          />
-        </>
-      )}
+      {/* Selection highlight removed for cleaner look */}
       
       {/* Saturn Rings */}
-      {data.hasRings && ringsTexture && (
-        <mesh position={[data.distance, 0, 0]} rotation={[Math.PI / 2.3, 0, 0]}>
+      {data.hasRings && ringsTexture && meshRef.current && (
+        <mesh position={meshRef.current.position} rotation={[Math.PI / 2.3, 0, 0]}>
           <ringGeometry args={[data.size * 1.2, data.size * 2, 64]} />
           <meshBasicMaterial
             map={ringsTexture}
@@ -261,144 +306,7 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
         </mesh>
       )}
       
-      {/* Label */}
-      {layers.showLabels && (
-        <mesh position={[data.distance, data.size + 0.5, 0]}>
-          <sprite>
-            <spriteMaterial color="#ffffff" transparent opacity={0.7} />
-          </sprite>
-        </mesh>
-      )}
-    </group>
-  );
-}
-
-// Satellite Component (Moon, ISS, etc.)
-function Satellite({ data, parentDistance }: { data: typeof satellitesData[0]; parentDistance: number }) {
-  const groupRef = useRef<Group>(null);
-  const meshRef = useRef<Mesh>(null);
-  const { layers } = useStore();
-  const timeSpeed = useStore((state) => state.timeSpeed);
-  
-  const texture = data.texture ? useTexture(data.texture) : null;
-  
-  useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += data.orbitSpeed * timeSpeed;
-    }
-    if (meshRef.current) {
-      meshRef.current.rotation.y += 0.01;
-    }
-  });
-  
-  if (!layers.showSatellites) return null;
-  
-  return (
-    <group ref={groupRef} position={[parentDistance, 0, 0]}>
-      <mesh ref={meshRef} position={[data.distance, 0, 0]}>
-        <sphereGeometry args={[data.size, 16, 16]} />
-        {texture ? (
-          <meshStandardMaterial map={texture} />
-        ) : (
-          <meshStandardMaterial color={data.color || '#CCCCCC'} />
-        )}
-      </mesh>
-    </group>
-  );
-}
-
-// Spacecraft Component (Parker Solar Probe, etc.)
-function Spacecraft({ data }: { data: typeof spacecraftData[0] }) {
-  const groupRef = useRef<Group>(null);
-  const { layers } = useStore();
-  const timeSpeed = useStore((state) => state.timeSpeed);
-  
-  useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += data.orbitSpeed * timeSpeed;
-    }
-  });
-  
-  if (!layers.showSpacecraft) return null;
-  
-  return (
-    <group ref={groupRef}>
-      <mesh position={[data.distance, 0, 0]}>
-        <boxGeometry args={[data.size, data.size, data.size * 2]} />
-        <meshStandardMaterial color={data.color} emissive={data.color} emissiveIntensity={0.5} />
-      </mesh>
-    </group>
-  );
-}
-
-// Asteroid Belt Component
-function AsteroidBelt() {
-  const { layers } = useStore();
-  
-  const asteroids = useMemo(() => {
-    const temp = [];
-    for (let i = 0; i < 300; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const distance = 24 + Math.random() * 4; // Between Mars and Jupiter
-      const size = 0.02 + Math.random() * 0.05;
-      const x = Math.cos(angle) * distance;
-      const z = Math.sin(angle) * distance;
-      const y = (Math.random() - 0.5) * 0.5;
-      
-      temp.push({ x, y, z, size });
-    }
-    return temp;
-  }, []);
-  
-  if (!layers.showAsteroids) return null;
-  
-  return (
-    <group>
-      {asteroids.map((asteroid, i) => (
-        <mesh key={i} position={[asteroid.x, asteroid.y, asteroid.z]}>
-          <sphereGeometry args={[asteroid.size, 6, 6]} />
-          <meshStandardMaterial color="#8B7355" roughness={1} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-// Comet Component
-function Comets() {
-  const { layers } = useStore();
-  const groupRef = useRef<Group>(null);
-  
-  useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y += 0.0005;
-    }
-  });
-  
-  const comets = useMemo(() => {
-    return [
-      { x: 45, y: 5, z: 10, size: 0.1, tailLength: 2 },
-      { x: -35, y: -8, z: -25, size: 0.08, tailLength: 1.5 },
-    ];
-  }, []);
-  
-  if (!layers.showComets) return null;
-  
-  return (
-    <group ref={groupRef}>
-      {comets.map((comet, i) => (
-        <group key={i} position={[comet.x, comet.y, comet.z]}>
-          <mesh>
-            <sphereGeometry args={[comet.size, 8, 8]} />
-            <meshStandardMaterial color="#AACCFF" emissive="#88AAFF" emissiveIntensity={0.5} />
-          </mesh>
-          {/* Tail */}
-          <mesh position={[-comet.tailLength / 2, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <coneGeometry args={[comet.size * 0.5, comet.tailLength, 8]} />
-            <meshBasicMaterial color="#AACCFF" transparent opacity={0.3} />
-          </mesh>
-        </group>
-      ))}
+      {/* Labels removed for cleaner appearance */}
     </group>
   );
 }
@@ -497,7 +405,9 @@ function Scene({ controlsRef }: { controlsRef: React.RefObject<any> }) {
       <CameraController controlsRef={controlsRef} />
       
       {/* Lighting */}
-      <ambientLight intensity={0.1} />
+      <ambientLight intensity={0.5} />
+      <hemisphereLight args={['#ffffff', '#080820', 0.6]} />
+      <pointLight position={[0, 0, 0]} intensity={3} distance={300} decay={2} />
       
       {/* Sun */}
       <Sun onClick={() => handlePlanetClick('sun')} />
@@ -506,7 +416,15 @@ function Scene({ controlsRef }: { controlsRef: React.RefObject<any> }) {
       {layers.showOrbits && (
         <>
           {planetsData.map((planet) => (
-            <OrbitPath key={planet.name} radius={planet.distance} color={planet.color} />
+            <OrbitPath 
+              key={planet.name} 
+              radius={planet.distance} 
+              color={planet.color}
+              eccentricity={planet.eccentricity || 0}
+              inclination={planet.inclination || 0}
+              planetName={planet.name}
+              onClick={() => handlePlanetClick(planet.name)}
+            />
           ))}
         </>
       )}
@@ -519,25 +437,6 @@ function Scene({ controlsRef }: { controlsRef: React.RefObject<any> }) {
           onClick={() => handlePlanetClick(planet.name)}
         />
       ))}
-      
-      {/* Satellites */}
-      {satellitesData.map((satellite) => {
-        const parent = planetsData.find((p) => p.name === satellite.parent);
-        return parent ? (
-          <Satellite key={satellite.name} data={satellite} parentDistance={parent.distance} />
-        ) : null;
-      })}
-      
-      {/* Spacecraft */}
-      {spacecraftData.map((craft) => (
-        <Spacecraft key={craft.name} data={craft} />
-      ))}
-      
-      {/* Asteroid Belt */}
-      <AsteroidBelt />
-      
-      {/* Comets */}
-      <Comets />
       
       {/* Starfield */}
       <Stars radius={300} depth={50} count={2000} factor={4} saturation={0} fade speed={1} />
