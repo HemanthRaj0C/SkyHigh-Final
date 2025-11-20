@@ -16,6 +16,78 @@ function calculateRealTimeAngle(orbitalPeriodDays: number) {
 }
 
 // Planet data with realistic-inspired but visually compressed scales
+// Famous asteroids data
+const asteroidsData = [
+  {
+    name: 'ceres',
+    size: 0.47, // Largest asteroid, dwarf planet
+    distance: 26.5, // Between Mars and Jupiter
+    orbitSpeed: 0.005,
+    rotationSpeed: 0.015,
+    color: '#8B7D6B',
+    eccentricity: 0.076,
+    inclination: 10.6,
+    orbitalPeriodDays: 1680,
+  },
+  {
+    name: 'vesta',
+    size: 0.26, // Second largest asteroid
+    distance: 23.5,
+    orbitSpeed: 0.006,
+    rotationSpeed: 0.020,
+    color: '#A89F91',
+    eccentricity: 0.089,
+    inclination: 7.1,
+    orbitalPeriodDays: 1325,
+  },
+  {
+    name: 'pallas',
+    size: 0.26, // Third largest
+    distance: 25.8,
+    orbitSpeed: 0.0055,
+    rotationSpeed: 0.018,
+    color: '#9C8E80',
+    eccentricity: 0.231,
+    inclination: 34.8, // Highly inclined orbit
+    orbitalPeriodDays: 1686,
+  },
+  {
+    name: 'hygiea',
+    size: 0.22, // Fourth largest
+    distance: 27.2,
+    orbitSpeed: 0.0048,
+    rotationSpeed: 0.016,
+    color: '#7A6F63',
+    eccentricity: 0.117,
+    inclination: 3.8,
+    orbitalPeriodDays: 2029,
+  },
+];
+
+// Satellites data
+const satellitesData = [
+  {
+    name: 'iss',
+    displayName: 'ISS',
+    parentPlanet: 'earth',
+    size: 0.05,
+    distance: 1.3, // Relative to Earth
+    orbitSpeed: 0.15,
+    color: '#C0C0C0',
+    orbitalPeriodMinutes: 92.68,
+  },
+  {
+    name: 'hubble',
+    displayName: 'Hubble',
+    parentPlanet: 'earth',
+    size: 0.025,
+    distance: 1.35,
+    orbitSpeed: 0.14,
+    color: '#B0B0B0',
+    orbitalPeriodMinutes: 95,
+  },
+];
+
 const planetsData = [
   {
     name: 'mercury',
@@ -148,47 +220,56 @@ function OrbitPath({
   planetName: string;
   onClick: () => void;
 }) {
-  const points = [];
-  const segments = 256; // More segments for smoother ellipses
+  const [hovered, setHovered] = useState(false);
+  const points = useMemo(() => {
+    const pts = [];
+    const segments = 256; // More segments for smoother ellipses
+    
+    // Calculate semi-major and semi-minor axes for ellipse
+    const a = radius; // semi-major axis
+    const b = radius * Math.sqrt(1 - eccentricity * eccentricity); // semi-minor axis
+    const c = radius * eccentricity; // focal point offset
+    const inclinationRad = (inclination * Math.PI) / 180; // Convert to radians
+    
+    for (let i = 0; i <= segments; i++) {
+      const angle = (i / segments) * Math.PI * 2;
+      // Ellipse formula with sun at one focus
+      const x = (a * Math.cos(angle)) - c;
+      const z = b * Math.sin(angle);
+      // Apply orbital inclination (tilt)
+      const y = z * Math.sin(inclinationRad);
+      const zTilted = z * Math.cos(inclinationRad);
+      pts.push(new THREE.Vector3(x, y, zTilted));
+    }
+    return pts;
+  }, [radius, eccentricity, inclination]);
   
-  // Calculate semi-major and semi-minor axes for ellipse
-  const a = radius; // semi-major axis
-  const b = radius * Math.sqrt(1 - eccentricity * eccentricity); // semi-minor axis
-  const c = radius * eccentricity; // focal point offset
-  const inclinationRad = (inclination * Math.PI) / 180; // Convert to radians
-  
-  for (let i = 0; i <= segments; i++) {
-    const angle = (i / segments) * Math.PI * 2;
-    // Ellipse formula with sun at one focus
-    const x = (a * Math.cos(angle)) - c;
-    const z = b * Math.sin(angle);
-    // Apply orbital inclination (tilt)
-    const y = z * Math.sin(inclinationRad);
-    const zTilted = z * Math.cos(inclinationRad);
-    points.push(new THREE.Vector3(x, y, zTilted));
-  }
-  
-  const geometry = new BufferGeometry().setFromPoints(points);
-  const material = new LineBasicMaterial({ color, opacity: 0.3, transparent: true, linewidth: 2 });
-  const line = new Line(geometry, material);
+  const curve = useMemo(() => new THREE.CatmullRomCurve3(points), [points]);
   
   return (
-    <primitive 
-      object={line}
-      onClick={(e: any) => {
+    <mesh
+      onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
-      onPointerOver={(e: any) => {
+      onPointerOver={(e) => {
         e.stopPropagation();
         document.body.style.cursor = 'pointer';
-        material.opacity = 0.6;
+        setHovered(true);
       }}
-      onPointerOut={() => {
+      onPointerOut={(e) => {
+        e.stopPropagation();
         document.body.style.cursor = 'auto';
-        material.opacity = 0.3;
+        setHovered(false);
       }}
-    />
+    >
+      <tubeGeometry args={[curve, 256, 0.05, 8, false]} />
+      <meshBasicMaterial 
+        color={color} 
+        opacity={hovered ? 0.6 : 0.3} 
+        transparent 
+      />
+    </mesh>
   );
 }
 
@@ -207,6 +288,276 @@ function TexturePreloader() {
   useTexture.preload('/textures/saturn-rings.png');
   useTexture.preload('/textures/saturn-ring-alpha.png');
   return null;
+}
+
+// Asteroid Belt Component - creates thousands of small asteroids
+function AsteroidBelt() {
+  const asteroidCount = 2000;
+  const timeSpeed = useStore((state) => state.timeSpeed);
+  const asteroids = useMemo(() => {
+    const temp = [];
+    for (let i = 0; i < asteroidCount; i++) {
+      const distance = 22 + Math.random() * 8; // Between Mars (20) and Jupiter (32)
+      const angle = Math.random() * Math.PI * 2;
+      const size = 0.02 + Math.random() * 0.08; // Small random sizes
+      const speed = 0.003 + Math.random() * 0.004;
+      const verticalOffset = (Math.random() - 0.5) * 2; // Vertical spread
+      // Approximate orbital period (in days) based on distance using Kepler's 3rd law
+      const orbitalPeriodDays = Math.pow(distance / 16, 1.5) * 365; // Relative to Earth
+      temp.push({ distance, angle, size, speed, verticalOffset, orbitalPeriodDays });
+    }
+    return temp;
+  }, []);
+
+  useFrame(() => {
+    asteroids.forEach((asteroid) => {
+      if (timeSpeed === -1) {
+        // Real-time position
+        asteroid.angle = calculateRealTimeAngle(asteroid.orbitalPeriodDays);
+      } else {
+        // Animated position
+        asteroid.angle += asteroid.speed * 0.01 * timeSpeed;
+      }
+    });
+  });
+
+  const { layers } = useStore();
+  if (!layers.showAsteroids) return null;
+
+  return (
+    <>
+      {asteroids.map((asteroid, i) => (
+        <mesh
+          key={i}
+          position={[
+            asteroid.distance * Math.cos(asteroid.angle),
+            asteroid.verticalOffset,
+            asteroid.distance * Math.sin(asteroid.angle),
+          ]}
+        >
+          <sphereGeometry args={[asteroid.size, 6, 6]} />
+          <meshStandardMaterial color="#8B8B7A" roughness={0.9} />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
+// Asteroid Component - for named asteroids
+function Asteroid({ data, onClick }: { data: typeof asteroidsData[0]; onClick: () => void }) {
+  const meshRef = useRef<Mesh>(null);
+  const { selectedBody, layers } = useStore();
+  const timeSpeed = useStore((state) => state.timeSpeed);
+  const angleRef = useRef(Math.random() * Math.PI * 2);
+  const lastTimeSpeedRef = useRef(timeSpeed);
+
+  const a = data.distance;
+  const b = data.distance * Math.sqrt(1 - data.eccentricity * data.eccentricity);
+  const c = data.distance * data.eccentricity;
+  const inclinationRad = (data.inclination * Math.PI) / 180;
+
+  useFrame(() => {
+    if (meshRef.current) {
+      let angle: number;
+      
+      // Check if switching to real-time mode
+      if (timeSpeed === -1 && lastTimeSpeedRef.current !== -1) {
+        // Initialize to real-time position
+        angleRef.current = calculateRealTimeAngle(data.orbitalPeriodDays);
+      }
+      
+      if (timeSpeed === -1) {
+        // Real-time astronomical position
+        angle = calculateRealTimeAngle(data.orbitalPeriodDays);
+      } else {
+        // Animated position
+        angleRef.current += data.orbitSpeed * timeSpeed;
+        angle = angleRef.current;
+      }
+      
+      lastTimeSpeedRef.current = timeSpeed;
+
+      const x = (a * Math.cos(angle)) - c;
+      const z = b * Math.sin(angle);
+      const y = z * Math.sin(inclinationRad);
+      const zTilted = z * Math.cos(inclinationRad);
+
+      meshRef.current.position.set(x, y, zTilted);
+      
+      // Real-time rotation
+      if (timeSpeed === -1 && data.rotationSpeed) {
+        const now = new Date();
+        const rotationPeriodHours = (data.orbitalPeriodDays * 24) / 100; // Approximate
+        const millisInHour = 3600000;
+        const rotationsCompleted = (now.getTime() % (rotationPeriodHours * millisInHour)) / (rotationPeriodHours * millisInHour);
+        meshRef.current.rotation.y = rotationsCompleted * Math.PI * 2;
+      } else {
+        meshRef.current.rotation.y += data.rotationSpeed * (timeSpeed === -1 ? 0 : timeSpeed);
+      }
+
+      // Store position for camera tracking
+      const worldPos = new THREE.Vector3();
+      meshRef.current.getWorldPosition(worldPos);
+      planetPositions.set(data.name, worldPos);
+    }
+  });
+
+  const isSelected = selectedBody === data.name;
+  if (!layers.showAsteroids) return null;
+
+  return (
+    <mesh
+      ref={meshRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'pointer';
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = 'auto';
+      }}
+    >
+      <sphereGeometry args={[data.size, 16, 16]} />
+      <meshStandardMaterial 
+        color={data.color} 
+        roughness={0.9}
+        emissive={isSelected ? data.color : '#000000'}
+        emissiveIntensity={isSelected ? 0.3 : 0}
+      />
+    </mesh>
+  );
+}
+
+// Moon Component
+function Moon({ parentPlanet }: { parentPlanet: string }) {
+  const meshRef = useRef<Mesh>(null);
+  const moonTexture = useTexture('/textures/moon.jpg');
+  const { layers } = useStore();
+  const angleRef = useRef(0);
+  const timeSpeed = useStore((state) => state.timeSpeed);
+  const lastTimeSpeedRef = useRef(timeSpeed);
+  const orbitalPeriodDays = 27.3; // Moon's orbital period
+  const rotationPeriodHours = 27.3 * 24; // Tidally locked
+
+  useFrame(() => {
+    if (meshRef.current) {
+      const parentPos = planetPositions.get(parentPlanet);
+      if (parentPos) {
+        let angle: number;
+        
+        // Check if switching to real-time mode
+        if (timeSpeed === -1 && lastTimeSpeedRef.current !== -1) {
+          angleRef.current = calculateRealTimeAngle(orbitalPeriodDays);
+        }
+        
+        if (timeSpeed === -1) {
+          // Real-time position
+          angle = calculateRealTimeAngle(orbitalPeriodDays);
+        } else {
+          // Animated position
+          angleRef.current += 0.02 * timeSpeed;
+          angle = angleRef.current;
+        }
+        
+        lastTimeSpeedRef.current = timeSpeed;
+        
+        const distance = 2; // Distance from Earth
+        const x = parentPos.x + distance * Math.cos(angle);
+        const z = parentPos.z + distance * Math.sin(angle);
+        const y = parentPos.y + 0.2 * Math.sin(angle);
+        meshRef.current.position.set(x, y, z);
+        
+        // Real-time rotation (tidally locked, same as orbit)
+        if (timeSpeed === -1) {
+          const now = new Date();
+          const millisInHour = 3600000;
+          const rotationsCompleted = (now.getTime() % (rotationPeriodHours * millisInHour)) / (rotationPeriodHours * millisInHour);
+          meshRef.current.rotation.y = rotationsCompleted * Math.PI * 2;
+        } else {
+          meshRef.current.rotation.y += 0.01 * (timeSpeed === -1 ? 0 : timeSpeed);
+        }
+        
+        // Store position for camera tracking
+        const worldPos = new THREE.Vector3();
+        meshRef.current.getWorldPosition(worldPos);
+        planetPositions.set('moon', worldPos);
+      }
+    }
+  });
+
+  if (!layers.showSatellites) return null;
+
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[0.27, 16, 16]} />
+      <meshStandardMaterial map={moonTexture} />
+    </mesh>
+  );
+}
+
+// Satellite Component (artificial satellites)
+function Satellite({ data }: { data: typeof satellitesData[0] }) {
+  const meshRef = useRef<Mesh>(null);
+  const { layers } = useStore();
+  const angleRef = useRef(Math.random() * Math.PI * 2);
+  const timeSpeed = useStore((state) => state.timeSpeed);
+  const lastTimeSpeedRef = useRef(timeSpeed);
+  const orbitalPeriodDays = data.orbitalPeriodMinutes / (24 * 60); // Convert to days
+
+  useFrame(() => {
+    if (meshRef.current) {
+      const parentPos = planetPositions.get(data.parentPlanet);
+      if (parentPos) {
+        let angle: number;
+        
+        // Check if switching to real-time mode
+        if (timeSpeed === -1 && lastTimeSpeedRef.current !== -1) {
+          angleRef.current = calculateRealTimeAngle(orbitalPeriodDays);
+        }
+        
+        if (timeSpeed === -1) {
+          // Real-time position for satellites
+          angle = calculateRealTimeAngle(orbitalPeriodDays);
+        } else {
+          // Animated position
+          angleRef.current += data.orbitSpeed * timeSpeed;
+          angle = angleRef.current;
+        }
+        
+        lastTimeSpeedRef.current = timeSpeed;
+        
+        const x = parentPos.x + data.distance * Math.cos(angle);
+        const z = parentPos.z + data.distance * Math.sin(angle);
+        const y = parentPos.y + 0.1 * Math.sin(angle * 2);
+        meshRef.current.position.set(x, y, z);
+      }
+    }
+  });
+
+  if (!layers.showSatellites) return null;
+
+  return (
+    <group ref={meshRef}>
+      {/* Satellite body */}
+      <mesh>
+        <boxGeometry args={[data.size, data.size * 0.6, data.size * 0.8]} />
+        <meshStandardMaterial color={data.color} metalness={0.8} roughness={0.2} />
+      </mesh>
+      {/* Solar panels */}
+      <mesh position={[-data.size, 0, 0]}>
+        <boxGeometry args={[data.size * 1.5, data.size * 0.05, data.size * 0.9]} />
+        <meshStandardMaterial color="#1a1a2e" metalness={0.6} roughness={0.3} />
+      </mesh>
+      <mesh position={[data.size, 0, 0]}>
+        <boxGeometry args={[data.size * 1.5, data.size * 0.05, data.size * 0.9]} />
+        <meshStandardMaterial color="#1a1a2e" metalness={0.6} roughness={0.3} />
+      </mesh>
+    </group>
+  );
 }
 
 // Sun Component
@@ -406,20 +757,23 @@ function CameraController({ controlsRef }: { controlsRef: React.RefObject<any> }
       cameraTargetY = 10;
       cameraTargetZ = offsetDistance;
     } else {
-      // Get the actual planet world position from the stored positions
-      const planetPos = planetPositions.get(selectedBody);
-      if (!planetPos) return; // Planet hasn't rendered yet
+      // Get the actual world position from the stored positions (planets or asteroids)
+      const bodyPos = planetPositions.get(selectedBody);
+      if (!bodyPos) return; // Body hasn't rendered yet
       
-      targetX = planetPos.x;
-      targetY = planetPos.y;
-      targetZ = planetPos.z;
+      targetX = bodyPos.x;
+      targetY = bodyPos.y;
+      targetZ = bodyPos.z;
       
-      // Find planet data for sizing
+      // Find data for sizing - check planets first, then asteroids
       const planet = planetsData.find((p) => p.name === selectedBody);
-      if (!planet) return;
+      const asteroid = asteroidsData.find((a) => a.name === selectedBody);
+      const bodyData = planet || asteroid;
       
-      // Camera offset from planet (behind and above for nice view)
-      offsetDistance = Math.max(planet.size * 5, 3);
+      if (!bodyData) return;
+      
+      // Camera offset from body (behind and above for nice view)
+      offsetDistance = Math.max(bodyData.size * 5, 3);
       
       // Calculate offset direction (away from sun)
       const distanceFromSun = Math.sqrt(targetX * targetX + targetZ * targetZ);
@@ -427,7 +781,7 @@ function CameraController({ controlsRef }: { controlsRef: React.RefObject<any> }
       const dirZ = targetZ / distanceFromSun;
       
       cameraTargetX = targetX + dirX * offsetDistance;
-      cameraTargetY = targetY + Math.max(planet.size * 3, 2);
+      cameraTargetY = targetY + Math.max(bodyData.size * 3, 2);
       cameraTargetZ = targetZ + dirZ * offsetDistance;
     }
     
@@ -500,6 +854,43 @@ function Scene({ controlsRef }: { controlsRef: React.RefObject<any> }) {
           data={planet}
           onClick={() => handlePlanetClick(planet.name)}
         />
+      ))}
+
+      {/* Asteroid Belt */}
+      <AsteroidBelt />
+
+      {/* Famous Asteroids */}
+      {asteroidsData.map((asteroid) => (
+        <Asteroid
+          key={asteroid.name}
+          data={asteroid}
+          onClick={() => handlePlanetClick(asteroid.name)}
+        />
+      ))}
+
+      {/* Asteroid Orbit Paths */}
+      {layers.showOrbits && layers.showAsteroids && (
+        <>
+          {asteroidsData.map((asteroid) => (
+            <OrbitPath
+              key={asteroid.name}
+              radius={asteroid.distance}
+              color={asteroid.color}
+              eccentricity={asteroid.eccentricity || 0}
+              inclination={asteroid.inclination || 0}
+              planetName={asteroid.name}
+              onClick={() => handlePlanetClick(asteroid.name)}
+            />
+          ))}
+        </>
+      )}
+
+      {/* Moon */}
+      <Moon parentPlanet="earth" />
+
+      {/* Satellites */}
+      {satellitesData.map((satellite) => (
+        <Satellite key={satellite.name} data={satellite} />
       ))}
       
       {/* Starfield */}
