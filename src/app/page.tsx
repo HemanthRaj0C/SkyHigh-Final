@@ -4,11 +4,9 @@ import dynamic from 'next/dynamic';
 import ResetViewButton from '@/components/ResetViewButton';
 import KeyboardShortcuts from '@/components/KeyboardShortcuts';
 import PlanetInfoPanel from '@/components/PlanetInfoPanel';
-import ChatWidget from '@/components/ChatWidget';
-import TimeControls from '@/components/TimeControls';
-import HelpPanel from '@/components/HelpPanel';
 import ApodButton from '@/components/ApodButton';
 import ControlPanel from '@/components/ControlPanel';
+import TimeControls from '@/components/TimeControls';
 
 const SolarSystemScene = dynamic(() => import('@/components/SolarSystemScene'), {
   ssr: false,
@@ -37,10 +35,7 @@ export default function Home() {
       <PlanetInfoPanel />
 
       {/* Time Controls - Bottom Center */}
-      {/* <TimeControls /> */}
-
-      {/* Help Panel - Top Right */}
-      <HelpPanel />
+      <TimeControls />
 
       {/* APOD Button - Top Center */}
       <ApodButton />

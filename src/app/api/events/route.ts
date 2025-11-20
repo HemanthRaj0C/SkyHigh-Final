@@ -212,7 +212,7 @@ function getCountdown(startDate: Date): string {
 // Fetch DONKI Space Weather events
 async function fetchDONKISpaceWeather(): Promise<AstronomicalEvent[]> {
   try {
-    const NASA_API_KEY = process.env.NASA_API_KEY;
+    const NASA_API_KEY = process.env.NEXT_PUBLIC_NASA_API_KEY;
     if (!NASA_API_KEY) return [];
 
     const endDate = new Date();
@@ -292,7 +292,7 @@ async function fetchDONKISpaceWeather(): Promise<AstronomicalEvent[]> {
 // Fetch Near Earth Asteroids
 async function fetchNearEarthAsteroids(): Promise<AstronomicalEvent[]> {
   try {
-    const NASA_API_KEY = process.env.NASA_API_KEY;
+    const NASA_API_KEY = process.env.NEXT_PUBLIC_NASA_API_KEY || 'DEMO_KEY';
     if (!NASA_API_KEY) return [];
 
     const today = new Date();

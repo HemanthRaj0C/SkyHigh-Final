@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(apodCache.data);
     }
 
-    const NASA_API_KEY = process.env.NASA_API_KEY;
+    const NASA_API_KEY = process.env.NEXT_PUBLIC_NASA_API_KEY;
     
     if (!NASA_API_KEY) {
       return NextResponse.json(

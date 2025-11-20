@@ -12,8 +12,10 @@ import {
   Minimize, 
   MessageCircle, 
   X,
-  ChevronRight
+  ChevronRight,
+  HelpCircle
 } from 'lucide-react';
+import ChatWidget from './ChatWidget';
 
 const layerConfig = [
   { key: 'showUI' as const, label: 'User Interface', icon: '🖥️' },
@@ -46,8 +48,9 @@ const severityColors = {
 };
 
 export default function ControlPanel() {
-  const { layers, toggleLayer } = useStore();
+  const { layers, toggleLayer, toggleChatWidget, selectedBody, setSelectedBody, showChatWidget } = useStore();
   const [activePanel, setActivePanel] = useState<'layers' | 'info' | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
   const [filterType, setFilterType] = useState<EventType | 'all'>('all');
   const [events, setEvents] = useState<AstronomicalEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,10 +126,118 @@ export default function ControlPanel() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
+  const shortcuts = [
+    { key: 'L', description: 'Toggle Layers Panel' },
+    { key: 'I', description: 'Toggle Alerts Panel' },
+    { key: 'P', description: 'Toggle Planet Info Panel' },
+    { key: 'F', description: 'Toggle Fullscreen' },
+    { key: 'Esc', description: 'Close Panels / Deselect' },
+    { key: 'Mouse Drag', description: 'Orbit Camera' },
+    { key: 'Mouse Scroll', description: 'Zoom In/Out' },
+    { key: 'Click Planet', description: 'Focus & View Info' },
+  ];
+
   return (
-    <div className="fixed bottom-4 right-4 z-20 flex flex-row items-end gap-4">
-      {/* Layers Panel */}
-      {activePanel === 'layers' && (
+    <>
+      {/* Help Button - shown at top-right when no planet is selected and chat is closed */}
+      {!selectedBody && !showChatWidget && (
+        <button
+          onClick={() => setShowHelp(!showHelp)}
+          className={`fixed top-4 right-4 z-30 w-12 h-12 rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-110 flex items-center justify-center
+                     ${showHelp
+                       ? 'bg-blue-500/30 border-2 border-blue-400'
+                       : 'bg-white/10 hover:bg-white/20 border border-white/20'
+                     }`}
+          title="Help & Shortcuts"
+        >
+          <HelpCircle className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Help Panel - shown when help button is clicked */}
+      {showHelp && !selectedBody && !showChatWidget && (
+        <div className="fixed top-20 right-4 z-30
+                        bg-black/40 backdrop-blur-xl
+                        text-white rounded-2xl
+                        border border-white/20
+                        shadow-2xl
+                        w-80 max-h-[70vh] overflow-hidden
+                        flex flex-col
+                        animate-slide-in-right">
+          {/* Header */}
+          <div className="p-4 border-b border-white/10 bg-gradient-to-r from-purple-500/20 to-blue-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5" />
+                <h2 className="font-semibold text-lg">Help & Controls</h2>
+              </div>
+              <button
+                onClick={() => setShowHelp(false)}
+                className="hover:bg-white/10 p-1 rounded-lg transition-colors"
+                title="Close Help"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Keyboard Shortcuts */}
+            <div>
+              <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
+                <span>⌨️</span> Keyboard Shortcuts
+              </h3>
+              <div className="space-y-2">
+                {shortcuts.map((shortcut, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-2 rounded-lg bg-white/5
+                               hover:bg-white/10 transition-colors"
+                  >
+                    <span className="text-sm text-white/70">{shortcut.description}</span>
+                    <kbd className="px-2 py-1 bg-white/10 rounded text-xs font-mono border border-white/20">
+                      {shortcut.key}
+                    </kbd>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick Tips */}
+            <div>
+              <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
+                <span>💡</span> Quick Tips
+              </h3>
+              <ul className="space-y-2 text-sm text-white/70">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  <span>Check Alerts for upcoming astronomical events and meteor showers</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  <span>Ask Cosmos AI anything about space, planets, or astronomy</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Close/Deselect Button - shown at top-right when planet is selected */}
+      {selectedBody && (
+        <button
+          onClick={() => setSelectedBody(null)}
+          className="fixed top-4 right-4 z-30 w-10 h-10 rounded-full bg-red-500/20 hover:bg-red-500/30 backdrop-blur-md border-2 border-red-400 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
+          title="Close Planet Info"
+        >
+          <X className="w-7 h-7" />
+        </button>
+      )}
+
+      <div className="fixed bottom-4 right-4 z-20 flex flex-row items-end gap-4">
+        {/* Layers Panel */}
+        {activePanel === 'layers' && !selectedBody && (
         <div className="bg-neutral-800 text-white rounded-lg border border-neutral-700 shadow-2xl w-56 max-h-[60vh] overflow-hidden flex flex-col transition-all duration-200">
           <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-700 bg-neutral-900/50">
             <div className="flex items-center gap-2">
@@ -154,7 +265,7 @@ export default function ControlPanel() {
       )}
 
       {/* Info/Alerts Panel */}
-      {activePanel === 'info' && (
+      {activePanel === 'info' && !selectedBody && (
         <div className="bg-black/80 backdrop-blur-xl text-white rounded-2xl border border-white/20 shadow-2xl w-80 max-h-[60vh] overflow-hidden flex flex-col transition-all duration-200">
           <div className="p-3 border-b border-white/10">
             <div className="flex items-center justify-between mb-2">
@@ -238,83 +349,88 @@ export default function ControlPanel() {
 
       {/* Control Buttons */}
       <div className="flex flex-col gap-2">
-        {/* Info Button */}
-        <button
-          onClick={() => setActivePanel(activePanel === 'info' ? null : 'info')}
-          className={`w-12 h-12 rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-110 relative flex items-center justify-center
-                     ${activePanel === 'info' 
-                       ? 'bg-blue-500/30 border-2 border-blue-400' 
-                       : 'bg-white/10 hover:bg-white/20 border border-white/20'
-                     }`}
-          title="Info/Alerts"
-        >
-          <Info className="w-6 h-6" />
-          {events.length > 0 && (
-            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-              {events.length}
-            </div>
-          )}
-        </button>
+        {/* Info Button - hidden when planet is selected */}
+        {!selectedBody && (
+          <button
+            onClick={() => setActivePanel(activePanel === 'info' ? null : 'info')}
+            className={`w-12 h-12 rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-110 relative flex items-center justify-center
+                       ${activePanel === 'info' 
+                         ? 'bg-blue-500/30 border-2 border-blue-400' 
+                         : 'bg-white/10 hover:bg-white/20 border border-white/20'
+                       }`}
+            title="Info/Alerts"
+          >
+            <Info className="w-6 h-6" />
+            {events.length > 0 && (
+              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                {events.length}
+              </div>
+            )}
+          </button>
+        )}
 
-        {/* Layers Button */}
-        <button
-          onClick={() => setActivePanel(activePanel === 'layers' ? null : 'layers')}
-          className={`w-12 h-12 rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-110 flex items-center justify-center
-                     ${activePanel === 'layers' 
-                       ? 'bg-blue-500/30 border-2 border-blue-400' 
-                       : 'bg-white/10 hover:bg-white/20 border border-white/20'
-                     }`}
-          title="Layers"
-        >
-          <Layers className="w-6 h-6" />
-        </button>
+        {/* Layers Button - hidden when planet is selected */}
+        {!selectedBody && (
+          <button
+            onClick={() => setActivePanel(activePanel === 'layers' ? null : 'layers')}
+            className={`w-12 h-12 rounded-full backdrop-blur-md transition-all shadow-lg hover:scale-110 flex items-center justify-center
+                       ${activePanel === 'layers' 
+                         ? 'bg-blue-500/30 border-2 border-blue-400' 
+                         : 'bg-white/10 hover:bg-white/20 border border-white/20'
+                       }`}
+            title="Layers"
+          >
+            <Layers className="w-6 h-6" />
+          </button>
+        )}
 
-        {/* Divider */}
-        <div className="h-px bg-white/20 my-1"></div>
+        {/* Divider - hidden when planet is selected */}
+        {!selectedBody && <div className="h-px bg-white/20 my-1"></div>}
 
-        {/* Zoom In Button */}
-        <button
-          onClick={handleZoomIn}
-          className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
-          title="Zoom In"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
+        {/* Zoom In Button - hidden when planet is selected */}
+        {!selectedBody && (
+          <button
+            onClick={handleZoomIn}
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
+            title="Zoom In"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        )}
 
-        {/* Zoom Out Button */}
-        <button
-          onClick={handleZoomOut}
-          className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
-          title="Zoom Out"
-        >
-          <Minus className="w-6 h-6" />
-        </button>
+        {/* Zoom Out Button - hidden when planet is selected */}
+        {!selectedBody && (
+          <button
+            onClick={handleZoomOut}
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
+            title="Zoom Out"
+          >
+            <Minus className="w-6 h-6" />
+          </button>
+        )}
 
-        {/* Fullscreen Button */}
-        <button
-          onClick={toggleFullscreen}
-          className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
-          title="Toggle Fullscreen"
-        >
-          {isFullscreen ? (
-            <Minimize className="w-6 h-6" />
-          ) : (
-            <Maximize className="w-6 h-6" />
-          )}
-        </button>
+        {/* Fullscreen Button - hidden when planet is selected */}
+        {!selectedBody && (
+          <button
+            onClick={toggleFullscreen}
+            className="w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 transition-all shadow-lg hover:scale-110 flex items-center justify-center"
+            title="Toggle Fullscreen"
+          >
+            {isFullscreen ? (
+              <Minimize className="w-6 h-6" />
+            ) : (
+              <Maximize className="w-6 h-6" />
+            )}
+          </button>
+        )}
 
-        {/* Divider */}
-        <div className="h-px bg-white/20 my-1"></div>
+        {/* Divider - hidden when planet is selected */}
+        {!selectedBody && <div className="h-px bg-white/20 my-1"></div>}
 
-        {/* Chat Button */}
-        <button
-          onClick={() => useStore.getState().toggleChatWidget()}
-          className="w-12 h-12 rounded-full bg-linear-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 backdrop-blur-md transition-all shadow-lg hover:scale-110 border border-white/20 flex items-center justify-center"
-          title="Chat"
-        >
-          <MessageCircle className="w-6 h-6" />
-        </button>
+        {/* Chat Widget - hidden when planet is selected */}
+        {!selectedBody && <ChatWidget />}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

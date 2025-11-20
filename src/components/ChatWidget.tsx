@@ -92,11 +92,10 @@ export default function ChatWidget() {
     return (
       <button
         onClick={toggleChatWidget}
-        className="fixed bottom-6 right-6 z-30
-                   transition-transform duration-300 hover:scale-110"
+        className="w-12 h-12 rounded-full overflow-hidden border-2 border-white/20 shadow-lg hover:scale-110 transition-all"
         title="Open Cosmos AI Chat"
       >
-        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-white/20 shadow-[0_0_20px_rgba(147,51,234,0.3)] hover:shadow-[0_0_30px_rgba(147,51,234,0.5)]">
+        <div className="relative w-full h-full">
           <Image
             src="/images/Chatbot.png"
             alt="Chatbot"

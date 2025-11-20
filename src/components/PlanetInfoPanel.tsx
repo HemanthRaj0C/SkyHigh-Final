@@ -3,8 +3,27 @@
 import { useStore } from '@/store/useStore';
 import { planetsDataDetailed } from '@/data/planetData';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { type AstronomicalEvent } from '@/data/events';
+import { 
+  Circle, 
+  Sun, 
+  RotateCw, 
+  Globe, 
+  Moon, 
+  Weight, 
+  ArrowDown, 
+  Thermometer,
+  type LucideIcon,
+  BarChart3,
+  Beaker,
+  Sparkles,
+  Plug,
+  Bell,
+  Calendar,
+  X,
+  ChevronDown,
+  ExternalLink
+} from 'lucide-react';
 
 type Section = 'facts' | 'composition' | 'features' | 'apis';
 
@@ -55,7 +74,7 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
                   startDate: new Date(flare.time_tag),
                   visibility: 'Global',
                   severity,
-                  icon: '☀️',
+                  icon: 'sun',
                 });
               }
             }
@@ -81,11 +100,36 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
                 startDate: new Date(latest.time_tag),
                 visibility: 'Global',
                 severity: speed > 500 ? 'medium' : 'low',
-                icon: '🌬️',
+                icon: 'wind',
               });
             }
           } catch (err) {
             console.error('Failed to fetch solar wind data:', err);
+          }
+
+          // DONKI - Space Weather Database
+          try {
+            const donkiRes = await fetch(
+              `https://api.nasa.gov/DONKI/notifications?startDate=${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}&api_key=${process.env.NEXT_PUBLIC_NASA_API_KEY || 'DEMO_KEY'}`
+            );
+            if (donkiRes.ok) {
+              const donkiData = await donkiRes.json();
+              if (donkiData.length > 0) {
+                const latestNotification = donkiData[0];
+                planetEvents.push({
+                  id: `donki-${latestNotification.messageID}`,
+                  type: 'solar_storm',
+                  title: latestNotification.messageType || 'Space Weather Alert',
+                  description: `${latestNotification.messageBody?.substring(0, 150)}... Source: NASA DONKI`,
+                  startDate: new Date(latestNotification.messageIssueTime),
+                  visibility: 'Global',
+                  severity: 'medium',
+                  icon: 'sun',
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch DONKI data:', err);
           }
         }
 
@@ -112,7 +156,7 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
                   startDate: new Date(event.geometry[0]?.date || new Date()),
                   visibility: 'Earth',
                   severity: category.includes('Volcano') || category.includes('Storm') ? 'high' : 'medium',
-                  icon: category.includes('Volcano') ? '🌋' : category.includes('Storm') ? '🌪️' : category.includes('Fire') ? '🔥' : '🌍',
+                  icon: category.includes('Volcano') ? 'volcano' : category.includes('Storm') ? 'cloud-lightning' : category.includes('Fire') ? 'flame' : 'globe',
                 });
               });
             }
@@ -138,41 +182,70 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
                 startDate: new Date(issData.timestamp * 1000),
                 visibility: 'Orbiting Earth',
                 severity: 'low',
-                icon: '🛰️',
+                icon: 'satellite',
               });
             }
           } catch (err) {
             console.error('Failed to fetch ISS data:', err);
           }
-        }
 
-        if (planetName === 'mars') {
-          // NASA Mars Rover Photos - Latest from Curiosity
+          // EPIC - Earth Polychromatic Imaging Camera
           try {
-            const roverRes = await fetch(
-              `https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/latest_photos?api_key=${process.env.NEXT_PUBLIC_NASA_API_KEY || 'DEMO_KEY'}`
+            const epicRes = await fetch(
+              `https://api.nasa.gov/EPIC/api/natural?api_key=${process.env.NEXT_PUBLIC_NASA_API_KEY || 'DEMO_KEY'}`
             );
-            if (roverRes.ok) {
-              const roverData = await roverRes.json();
-              if (roverData.latest_photos?.length > 0) {
-                const photo = roverData.latest_photos[0];
-                
+            if (epicRes.ok) {
+              const epicData = await epicRes.json();
+              if (epicData.length > 0) {
+                const latest = epicData[0];
                 planetEvents.push({
-                  id: `mars-rover-${photo.id}`,
+                  id: `epic-${latest.identifier}`,
                   type: 'planetary',
-                  title: 'Latest Mars Rover Image',
-                  description: `Sol ${photo.sol}: Curiosity captured new images using ${photo.camera.full_name}. Earth date: ${photo.earth_date}`,
-                  startDate: new Date(photo.earth_date),
-                  visibility: 'Mars Surface',
+                  title: 'Latest Earth Image from DSCOVR',
+                  description: `Full-disk Earth imagery captured from L1 Lagrange point. Coordinates: ${latest.centroid_coordinates.lat.toFixed(2)}°, ${latest.centroid_coordinates.lon.toFixed(2)}°`,
+                  startDate: new Date(latest.date),
+                  visibility: 'From Space',
                   severity: 'low',
-                  icon: '🔴',
+                  icon: 'globe',
                 });
               }
             }
           } catch (err) {
-            console.error('Failed to fetch Mars rover data:', err);
+            console.error('Failed to fetch EPIC data:', err);
+          }
+        }
+
+        if (planetName === 'venus') {
+          // Venus observation and data
+          try {
+            planetEvents.push({
+              id: 'venus-trek',
+              type: 'planetary',
+              title: 'Venus Surface Mapping Available',
+              description: 'High-resolution Venus surface imagery and topographic data accessible through NASA\'s Trek WMTS service for detailed exploration.',
+              startDate: new Date(),
+              visibility: 'Global',
+              severity: 'low',
+              icon: 'globe',
+            });
+          } catch (err) {
+            console.error('Failed to add Venus data:', err);
           }
 
+          // Venus observation window
+          planetEvents.push({
+            id: 'venus-observation',
+            type: 'planetary',
+            title: 'Venus Visibility',
+            description: 'Venus is visible as the "Evening Star" or "Morning Star". Its phases can be observed through telescopes, similar to Earth\'s Moon.',
+            startDate: new Date(),
+            visibility: 'Global',
+            severity: 'low',
+            icon: 'telescope',
+          });
+        }
+
+        if (planetName === 'mars') {
           // Mars Weather from NASA InSight (if available)
           try {
             const marsWeatherRes = await fetch(
@@ -193,7 +266,7 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
                   startDate: new Date(latestSol.First_UTC),
                   visibility: 'Mars Surface',
                   severity: 'low',
-                  icon: '🌡️',
+                  icon: 'thermometer',
                 });
               }
             }
@@ -203,6 +276,7 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
         }
 
         if (planetName === 'jupiter') {
+          // Jupiter observation
           planetEvents.push({
             id: 'jupiter-observation',
             type: 'planetary',
@@ -211,8 +285,35 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
             startDate: new Date(),
             visibility: 'Global',
             severity: 'low',
-            icon: '🪐',
+            icon: 'telescope',
           });
+
+          // Near-Earth Objects for context
+          try {
+            const today = new Date().toISOString().split('T')[0];
+            const neoRes = await fetch(
+              `https://api.nasa.gov/neo/rest/v1/feed?start_date=${today}&end_date=${today}&api_key=${process.env.NEXT_PUBLIC_NASA_API_KEY || 'DEMO_KEY'}`
+            );
+            if (neoRes.ok) {
+              const neoData = await neoRes.json();
+              const nearEarthObjects = neoData.near_earth_objects?.[today] || [];
+              if (nearEarthObjects.length > 0) {
+                const closest = nearEarthObjects[0];
+                planetEvents.push({
+                  id: `neo-${closest.id}`,
+                  type: 'planetary',
+                  title: 'Near-Earth Asteroid Detected',
+                  description: `${closest.name} passing at ${parseFloat(closest.close_approach_data[0].miss_distance.kilometers).toFixed(0)} km. Diameter: ~${closest.estimated_diameter.meters.estimated_diameter_max.toFixed(0)}m`,
+                  startDate: new Date(closest.close_approach_data[0].close_approach_date_full),
+                  visibility: 'Near Earth',
+                  severity: 'low',
+                  icon: 'circle',
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch NEO data:', err);
+          }
         }
 
         if (planetName === 'saturn') {
@@ -224,8 +325,44 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
             startDate: new Date(),
             visibility: 'Global',
             severity: 'low',
-            icon: '🪐',
+            icon: 'telescope',
           });
+
+          // Titan moon observation
+          planetEvents.push({
+            id: 'saturn-titan',
+            type: 'planetary',
+            title: 'Titan - Saturn\'s Largest Moon',
+            description: 'Titan, Saturn\'s largest moon, has a thick atmosphere and liquid methane lakes. It\'s one of the most Earth-like worlds in our solar system.',
+            startDate: new Date(),
+            visibility: 'Saturn System',
+            severity: 'low',
+            icon: 'moon',
+          });
+        }
+
+        // APOD - Astronomy Picture of the Day (for all planets)
+        try {
+          const apodRes = await fetch(
+            `https://api.nasa.gov/planetary/apod?api_key=${process.env.NEXT_PUBLIC_NASA_API_KEY || 'DEMO_KEY'}`
+          );
+          if (apodRes.ok) {
+            const apodData = await apodRes.json();
+            if (apodData.title) {
+              planetEvents.push({
+                id: `apod-${apodData.date}`,
+                type: 'planetary',
+                title: `APOD: ${apodData.title}`,
+                description: `${apodData.explanation.substring(0, 120)}...`,
+                startDate: new Date(apodData.date),
+                visibility: 'Astronomy Picture of the Day',
+                severity: 'low',
+                icon: 'sparkles',
+              });
+            }
+          }
+        } catch (err) {
+          console.error('Failed to fetch APOD:', err);
         }
 
         setEvents(planetEvents);
@@ -245,10 +382,10 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
 
   if (loading) {
     return (
-      <div className="border border-white/10 rounded-xl p-4 bg-white/5">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🔔</span>
-          <h3 className="font-semibold text-lg">Live Events & Alerts</h3>
+      <div className="border border-white/10 rounded-lg p-3.5 bg-gradient-to-br from-slate-800/40 to-slate-900/60">
+        <div className="flex items-center gap-2.5">
+          <Bell className="w-5 h-5" />
+          <h3 className="font-semibold text-base">Live Events & Alerts</h3>
         </div>
         <p className="text-sm text-white/60 mt-2">Loading events...</p>
       </div>
@@ -268,49 +405,59 @@ function PlanetEventsSection({ planetName }: { planetName: string }) {
     }).format(date);
   };
 
+  const getEventIcon = (iconName: string) => {
+    const iconMap: Record<string, any> = {
+      sun: Sun,
+      wind: RotateCw,
+      volcano: Thermometer,
+      'cloud-lightning': Sparkles,
+      flame: Sparkles,
+      globe: Globe,
+      satellite: Circle,
+      camera: Circle,
+      thermometer: Thermometer,
+      telescope: Circle,
+      moon: Moon,
+      sparkles: Sparkles,
+      circle: Circle,
+    };
+    const IconComponent = iconMap[iconName] || Bell;
+    return <IconComponent className="w-4 h-4" />;
+  };
+
   return (
-    <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+    <div className="border border-white/10 rounded-lg overflow-hidden bg-gradient-to-br from-slate-800/40 to-slate-900/60">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🔔</span>
-          <h3 className="font-semibold text-lg">Live Events & Alerts</h3>
-          <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-2.5">
+          <Bell className="w-5 h-5" />
+          <h3 className="font-semibold text-base">Live Events & Alerts</h3>
+          <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
             {events.length}
           </span>
         </div>
-        <svg
-          className={`w-5 h-5 transition-transform ${expanded ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
       </button>
       
       {expanded && (
-        <div className="p-4 pt-0 space-y-3 animate-fade-in">
+        <div className="px-3.5 pb-3.5 pt-0 space-y-2.5 animate-fade-in">
           {events.map((event) => (
             <div
               key={event.id}
-              className="p-3 rounded-lg bg-gradient-to-br from-orange-500/10 to-red-500/10 
+              className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/10 to-red-500/10 
                          border border-orange-400/20"
             >
-              <div className="flex items-start gap-3 mb-2">
-                <span className="text-xl">{event.icon}</span>
-                <div className="flex-1">
+              <div className="flex items-start gap-2.5 mb-1.5">
+                {getEventIcon(event.icon)}
+                <div className="flex-1 min-w-0">
                   <h4 className="font-semibold text-sm text-white">{event.title}</h4>
-                  <p className="text-xs text-white/70 mt-1">{event.description}</p>
+                  <p className="text-xs text-white/70 mt-1 leading-relaxed">{event.description}</p>
                 </div>
               </div>
-              <div className="text-xs text-white/60 flex items-center gap-2">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+              <div className="text-xs text-white/50 flex items-center gap-1.5 ml-7">
+                <Calendar className="w-3 h-3" />
                 <span>{formatDate(event.startDate)}</span>
               </div>
             </div>
@@ -335,76 +482,75 @@ export default function PlanetInfoPanel() {
     setExpandedSection(expandedSection === section ? null : section);
   };
 
-  const sectionIcon = {
-    facts: '📊',
-    composition: '🧪',
-    features: '⭐',
-    apis: '🔌',
+  const sectionIcons: Record<Section, LucideIcon> = {
+    facts: BarChart3,
+    composition: Beaker,
+    features: Sparkles,
+    apis: Plug,
+  };
+
+  // Get icon for each fact type
+  const getFactIcon = (key: string) => {
+    const iconMap: Record<string, LucideIcon> = {
+      diameter: Circle,
+      distanceFromSun: Sun,
+      orbitalPeriod: RotateCw,
+      rotationPeriod: Globe,
+      moons: Moon,
+      type: Circle,
+      mass: Weight,
+      gravity: ArrowDown,
+      temperature: Thermometer,
+    };
+    const IconComponent = iconMap[key] || Circle;
+    return <IconComponent className="w-4 h-4" />;
   };
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 z-10 w-[480px] 
-                    bg-black/40 backdrop-blur-xl text-white
-                    border-l border-white/20 shadow-2xl
-                    flex flex-col overflow-hidden
-                    animate-slide-in-right">
+    <div className="fixed right-0 top-0 bottom-0 z-10 w-[380px] bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-blue-950/95 backdrop-blur-xl text-white border-l border-blue-400/20 shadow-2xl flex flex-col overflow-hidden animate-slide-in-right">
       {/* Header */}
-      <div className="relative p-6 border-b border-white/10">
+      <div className="relative border-b border-white/10">
+        <div className="p-5 pr-14">
+          <h2 className="text-2xl font-bold mb-1.5">{planetData.displayName}</h2>
+          <p className="text-xs text-white/60">{planetData.description}</p>
+        </div>
         <button
           onClick={toggleInfoPanel}
-          className="absolute top-4 right-4 hover:bg-white/10 p-2 rounded-lg transition-colors"
-          title="Close Info Panel"
+          className="absolute top-5 right-5 text-white/60 hover:text-white transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X className="w-5 h-5" />
         </button>
-
-        <h2 className="text-3xl font-bold mb-2">{planetData.displayName}</h2>
-        <p className="text-sm text-white/70">{planetData.description}</p>
-      </div>
-
-      {/* Planet Image Preview */}
-      <div className="relative h-64 bg-gradient-to-b from-transparent to-black/50 border-b border-white/10">
-        <Image
-          src={planetData.image}
-          alt={planetData.displayName}
-          fill
-          className="object-cover"
-          priority
-        />
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Quick Facts Section */}
-        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+        <div className="border border-white/10 rounded-lg overflow-hidden bg-gradient-to-br from-slate-800/40 to-slate-900/60 my-10">
           <button
             onClick={() => toggleSection('facts')}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{sectionIcon.facts}</span>
-              <h3 className="font-semibold text-lg">Quick Facts</h3>
+            <div className="flex items-center gap-2.5">
+              {(() => {
+                const IconComponent = sectionIcons.facts;
+                return <IconComponent className="w-5 h-5" />;
+              })()}
+              <h3 className="font-semibold text-base">Quick Facts</h3>
             </div>
-            <svg
-              className={`w-5 h-5 transition-transform ${expandedSection === 'facts' ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`w-4 h-4 transition-transform ${expandedSection === 'facts' ? 'rotate-180' : ''}`} />
           </button>
           
           {expandedSection === 'facts' && (
-            <div className="p-4 pt-0 space-y-3 animate-fade-in">
+            <div className="p-4 animate-fade-in">
               {Object.entries(planetData.quickFacts).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-start">
-                  <span className="text-white/60 text-sm capitalize">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}:
-                  </span>
-                  <span className="text-white font-medium text-sm text-right">{value}</span>
+                <div key={key} className="flex items-start gap-4 mb-4 last:mb-0">
+                  <div className="mt-1 text-blue-400 flex-shrink-0">{getFactIcon(key)}</div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="text-white/40 text-[11px] uppercase tracking-widest font-medium">
+                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    </div>
+                    <div className="text-white font-semibold text-[15px] leading-tight">{value}</div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -412,36 +558,35 @@ export default function PlanetInfoPanel() {
         </div>
 
         {/* Composition & Atmosphere Section */}
-        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+        <div className="border border-white/10 rounded-lg overflow-hidden bg-gradient-to-br from-slate-800/40 to-slate-900/60">
           <button
             onClick={() => toggleSection('composition')}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{sectionIcon.composition}</span>
-              <h3 className="font-semibold text-lg">Composition & Atmosphere</h3>
+            <div className="flex items-center gap-2.5">
+              {(() => {
+                const IconComponent = sectionIcons.composition;
+                return <IconComponent className="w-5 h-5" />;
+              })()}
+              <h3 className="font-semibold text-base">Composition & Atmosphere</h3>
             </div>
-            <svg
-              className={`w-5 h-5 transition-transform ${expandedSection === 'composition' ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`w-4 h-4 transition-transform ${expandedSection === 'composition' ? 'rotate-180' : ''}`} />
           </button>
           
           {expandedSection === 'composition' && (
-            <div className="p-4 pt-0 space-y-3 animate-fade-in">
-              <p className="text-sm text-white/80">{planetData.composition.summary}</p>
+            <div className="px-3.5 pb-3.5 pt-0 space-y-3 animate-fade-in">
+              <div className="bg-white/5 rounded-lg p-3">
+                <h4 className="text-xs text-white/50 uppercase tracking-wide mb-2">Composition</h4>
+                <p className="text-sm text-white/90 leading-relaxed">{planetData.composition.summary}</p>
+              </div>
               
               {planetData.composition.atmosphere && (
-                <div className="mt-3">
-                  <h4 className="text-xs text-white/60 mb-2 uppercase font-semibold">Atmospheric Composition</h4>
+                <div className="bg-white/5 rounded-lg p-3">
+                  <h4 className="text-xs text-white/50 uppercase tracking-wide mb-2.5">Atmosphere</h4>
                   <ul className="space-y-1.5">
                     {planetData.composition.atmosphere.map((gas, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <span className="w-1.5 h-1.5 bg-blue-400 rounded-full"></span>
+                      <li key={i} className="flex items-center gap-2.5 text-sm text-white/80">
+                        <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span>
                         <span>{gas}</span>
                       </li>
                     ))}
@@ -453,32 +598,28 @@ export default function PlanetInfoPanel() {
         </div>
 
         {/* Notable Features Section */}
-        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+        <div className="border border-white/10 rounded-lg overflow-hidden bg-gradient-to-br from-slate-800/40 to-slate-900/60">
           <button
             onClick={() => toggleSection('features')}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{sectionIcon.features}</span>
-              <h3 className="font-semibold text-lg">Notable Features</h3>
+            <div className="flex items-center gap-2.5">
+              {(() => {
+                const IconComponent = sectionIcons.features;
+                return <IconComponent className="w-5 h-5" />;
+              })()}
+              <h3 className="font-semibold text-base">Notable Features</h3>
             </div>
-            <svg
-              className={`w-5 h-5 transition-transform ${expandedSection === 'features' ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`w-4 h-4 transition-transform ${expandedSection === 'features' ? 'rotate-180' : ''}`} />
           </button>
           
           {expandedSection === 'features' && (
-            <div className="p-4 pt-0 animate-fade-in">
-              <ul className="space-y-2.5">
+            <div className="px-3.5 pb-3.5 pt-0 animate-fade-in">
+              <ul className="space-y-2">
                 {planetData.notableFeatures.map((feature, i) => (
-                  <li key={i} className="flex items-start gap-3 text-sm">
-                    <span className="text-yellow-400 mt-0.5">★</span>
-                    <span className="text-white/80">{feature}</span>
+                  <li key={i} className="flex items-start gap-2.5 text-sm py-1.5">
+                    <Circle className="w-2 h-2 fill-red-400 text-red-400 mt-1.5" />
+                    <span className="text-white/80 leading-relaxed">{feature}</span>
                   </li>
                 ))}
               </ul>
@@ -490,34 +631,30 @@ export default function PlanetInfoPanel() {
         <PlanetEventsSection planetName={selectedBody} />
 
         {/* APIs & Data Sources Section */}
-        <div className="border border-white/10 rounded-xl overflow-hidden bg-white/5">
+        <div className="border border-white/10 rounded-lg overflow-hidden bg-gradient-to-br from-slate-800/40 to-slate-900/60">
           <button
             onClick={() => toggleSection('apis')}
-            className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+            className="w-full flex items-center justify-between p-3.5 hover:bg-white/5 transition-colors"
           >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{sectionIcon.apis}</span>
-              <h3 className="font-semibold text-lg">APIs & Data Sources</h3>
+            <div className="flex items-center gap-2.5">
+              {(() => {
+                const IconComponent = sectionIcons.apis;
+                return <IconComponent className="w-5 h-5" />;
+              })()}
+              <h3 className="font-semibold text-base">APIs & Data Sources</h3>
             </div>
-            <svg
-              className={`w-5 h-5 transition-transform ${expandedSection === 'apis' ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`w-4 h-4 transition-transform ${expandedSection === 'apis' ? 'rotate-180' : ''}`} />
           </button>
           
           {expandedSection === 'apis' && (
-            <div className="p-4 pt-0 space-y-3 animate-fade-in">
+            <div className="px-3.5 pb-3.5 pt-0 space-y-2.5 animate-fade-in">
               {planetData.apis.map((api, i) => (
                 <div
                   key={i}
                   className="p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 
                              border border-blue-400/20 hover:border-blue-400/40 transition-all"
                 >
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-start justify-between mb-1.5">
                     <h4 className="font-semibold text-sm text-blue-300">{api.name}</h4>
                     <a
                       href={api.url}
@@ -526,17 +663,10 @@ export default function PlanetInfoPanel() {
                       className="text-xs text-white/60 hover:text-white transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
+                      <ExternalLink className="w-4 h-4" />
                     </a>
                   </div>
-                  <p className="text-xs text-white/70">{api.description}</p>
+                  <p className="text-xs text-white/70 leading-relaxed">{api.description}</p>
                 </div>
               ))}
             </div>
@@ -545,7 +675,7 @@ export default function PlanetInfoPanel() {
       </div>
 
       {/* Footer Info */}
-      <div className="p-4 border-t border-white/10 text-xs text-white/50 text-center">
+      <div className="p-3 border-t border-white/10 text-xs text-white/40 text-center">
         Click on another celestial body to view its information
       </div>
     </div>
