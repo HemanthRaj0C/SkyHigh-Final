@@ -5,8 +5,8 @@ import { useState } from 'react';
 
 const speedPresets = [
   { value: 0, label: 'Pause', icon: '⏸' },
+  { value: -1, label: 'Real-Time', icon: '🌍' }, // Special value for astronomical real-time
   { value: 0.5, label: 'Slow', icon: '🐌' },
-  { value: 1, label: 'Real', icon: '🌍' },
   { value: 5, label: 'Fast', icon: '⚡' },
   { value: 10, label: 'Faster', icon: '🚀' },
 ];
@@ -16,7 +16,8 @@ export default function TimeControls() {
   const [expanded, setExpanded] = useState(false);
 
   const currentPreset = speedPresets.find(p => p.value === timeSpeed);
-  const speedLabel = currentPreset ? currentPreset.label : `${timeSpeed}x`;
+  const speedLabel = currentPreset ? currentPreset.label : timeSpeed === 0 ? 'Paused' : `${timeSpeed}x`;
+  const currentIcon = currentPreset?.icon || (timeSpeed === 0 ? '⏸' : '⚡');
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20">
@@ -51,20 +52,37 @@ export default function TimeControls() {
 
           {/* Speed Presets */}
           <div className="grid grid-cols-5 gap-2 mb-4">
-            {speedPresets.map((preset) => (
-              <button
-                key={preset.value}
-                onClick={() => setTimeSpeed(preset.value)}
-                className={`p-3 rounded-xl transition-all duration-200 border-2
-                           ${timeSpeed === preset.value
-                             ? 'bg-blue-500/20 border-blue-400 scale-105 shadow-lg shadow-blue-500/20'
-                             : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
-                           }`}
-              >
-                <div className="text-2xl mb-1">{preset.icon}</div>
-                <div className="text-white text-xs font-medium">{preset.label}</div>
-              </button>
-            ))}
+            {speedPresets.map((preset) => {
+              const isSelected = timeSpeed === preset.value;
+              const displayIcon = preset.value === 0 
+                ? (timeSpeed === 0 ? '⏸' : '▶️') 
+                : preset.icon;
+              const displayLabel = preset.value === 0
+                ? (timeSpeed === 0 ? 'Pause' : 'Play')
+                : preset.label;
+              
+              return (
+                <button
+                  key={preset.value}
+                  onClick={() => {
+                    if (preset.value === 0) {
+                      // Toggle between pause and previous speed (or 1)
+                      setTimeSpeed(timeSpeed === 0 ? 1 : 0);
+                    } else {
+                      setTimeSpeed(preset.value);
+                    }
+                  }}
+                  className={`p-3 rounded-xl transition-all duration-200 border-2
+                             ${isSelected
+                               ? 'bg-blue-500/20 border-blue-400 scale-105 shadow-lg shadow-blue-500/20'
+                               : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                             }`}
+                >
+                  <div className="text-2xl mb-1">{displayIcon}</div>
+                  <div className="text-white text-xs font-medium">{displayLabel}</div>
+                </button>
+              );
+            })}
           </div>
 
           {/* Custom Speed Slider */}
@@ -112,7 +130,7 @@ export default function TimeControls() {
                      flex items-center gap-4"
         >
           {/* Speed Icon */}
-          <div className="text-2xl">{currentPreset?.icon || '⚡'}</div>
+          <div className="text-2xl">{currentIcon}</div>
           
           {/* Speed Info */}
           <div className="flex flex-col items-start">

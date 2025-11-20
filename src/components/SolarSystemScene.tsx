@@ -7,6 +7,14 @@ import { Mesh, Group, BufferGeometry, LineBasicMaterial, Line } from 'three';
 import * as THREE from 'three';
 import { useStore } from '@/store/useStore';
 
+// Calculate real-time astronomical position based on current date
+function calculateRealTimeAngle(orbitalPeriodDays: number) {
+  const now = new Date();
+  const julianDate = (now.getTime() / 86400000) + 2440587.5;
+  const daysSinceEpoch = julianDate - 2451545; // J2000.0 epoch
+  return ((daysSinceEpoch / orbitalPeriodDays) * 2 * Math.PI) % (2 * Math.PI);
+}
+
 // Planet data with realistic-inspired but visually compressed scales
 const planetsData = [
   {
@@ -20,6 +28,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.206, // Mercury has high eccentricity
     inclination: 7.0, // degrees
+    orbitalPeriodDays: 88, // Real orbital period
   },
   {
     name: 'venus',
@@ -32,6 +41,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.007, // Venus has nearly circular orbit
     inclination: 3.4,
+    orbitalPeriodDays: 225,
   },
   {
     name: 'earth',
@@ -44,6 +54,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.017,
     inclination: 0.0, // Reference plane
+    orbitalPeriodDays: 365,
   },
   {
     name: 'mars',
@@ -56,6 +67,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.093, // Mars has noticeable eccentricity
     inclination: 1.9,
+    orbitalPeriodDays: 687,
   },
   {
     name: 'jupiter',
@@ -68,6 +80,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.048,
     inclination: 1.3,
+    orbitalPeriodDays: 4333,
   },
   {
     name: 'saturn',
@@ -81,6 +94,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.056,
     inclination: 2.5,
+    orbitalPeriodDays: 10759,
   },
   {
     name: 'uranus',
@@ -93,6 +107,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.047,
     inclination: 0.8,
+    orbitalPeriodDays: 30687,
   },
   {
     name: 'neptune',
@@ -105,6 +120,7 @@ const planetsData = [
     initialAngle: 0,
     eccentricity: 0.009,
     inclination: 1.8,
+    orbitalPeriodDays: 60190,
   },
 ];
 
@@ -237,6 +253,7 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
   const { selectedBody, layers } = useStore();
   const timeSpeed = useStore((state) => state.timeSpeed);
   const angleRef = useRef(data.initialAngle || 0);
+  const lastTimeSpeedRef = useRef(timeSpeed);
   
   // Calculate elliptical orbit parameters
   const a = data.distance; // semi-major axis
@@ -245,11 +262,26 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
   const inclinationRad = ((data.inclination || 0) * Math.PI) / 180; // Convert to radians
   
   useFrame(() => {
-    // Update orbital angle
-    angleRef.current += data.orbitSpeed * timeSpeed;
+    let angle: number;
+    
+    // Check if switching to real-time mode
+    if (timeSpeed === -1 && lastTimeSpeedRef.current !== -1) {
+      // Initialize to real-time position
+      angleRef.current = calculateRealTimeAngle(data.orbitalPeriodDays || 365);
+    }
+    
+    if (timeSpeed === -1) {
+      // Real-time astronomical position
+      angle = calculateRealTimeAngle(data.orbitalPeriodDays || 365);
+    } else {
+      // Animated position
+      angleRef.current += data.orbitSpeed * timeSpeed;
+      angle = angleRef.current;
+    }
+    
+    lastTimeSpeedRef.current = timeSpeed;
     
     // Calculate elliptical position with sun at one focus
-    const angle = angleRef.current;
     const x = (a * Math.cos(angle)) - c;
     const z = b * Math.sin(angle);
     // Apply orbital inclination (tilt)
