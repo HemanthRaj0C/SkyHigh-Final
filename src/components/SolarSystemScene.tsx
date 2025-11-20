@@ -205,6 +205,7 @@ function TexturePreloader() {
   useTexture.preload('/textures/neptune.jpg');
   useTexture.preload('/textures/moon.jpg');
   useTexture.preload('/textures/saturn-rings.png');
+  useTexture.preload('/textures/saturn-ring-alpha.png');
   return null;
 }
 
@@ -256,8 +257,10 @@ const planetPositions = new Map<string, THREE.Vector3>();
 function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () => void }) {
   const groupRef = useRef<Group>(null);
   const meshRef = useRef<Mesh>(null);
+  const ringMeshRef = useRef<Mesh>(null);
   const planetTexture = useTexture(data.texture);
   const ringsTexture = data.hasRings ? useTexture('/textures/saturn-rings.png') : null;
+  const ringsAlphaTexture = data.hasRings ? useTexture('/textures/saturn-ring-alpha.png') : null;
   const { selectedBody, layers } = useStore();
   const timeSpeed = useStore((state) => state.timeSpeed);
   const angleRef = useRef(data.initialAngle || 0);
@@ -311,6 +314,11 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
         meshRef.current.rotation.y += data.rotationSpeed * (timeSpeed === -1 ? 0 : timeSpeed);
       }
       
+      // Update ring position if planet has rings (no rotation - rings stay fixed)
+      if (data.hasRings && ringMeshRef.current) {
+        ringMeshRef.current.position.set(x, y, zTilted);
+      }
+      
       // Store the world position for camera tracking
       const worldPos = new THREE.Vector3();
       meshRef.current.getWorldPosition(worldPos);
@@ -345,14 +353,19 @@ function Planet({ data, onClick }: { data: typeof planetsData[0]; onClick: () =>
       {/* Selection highlight removed for cleaner look */}
       
       {/* Saturn Rings */}
-      {data.hasRings && ringsTexture && meshRef.current && (
-        <mesh position={meshRef.current.position} rotation={[Math.PI / 2.3, 0, 0]}>
-          <ringGeometry args={[data.size * 1.2, data.size * 2, 64]} />
-          <meshBasicMaterial
+      {data.hasRings && ringsTexture && ringsAlphaTexture && (
+        <mesh 
+          ref={ringMeshRef}
+          rotation={[Math.PI / 2 + 0.467, 0, 0]}
+        >
+          <ringGeometry args={[data.size * 1.4, data.size * 2.5, 64]} />
+          <meshStandardMaterial
             map={ringsTexture}
+            alphaMap={ringsAlphaTexture}
             side={THREE.DoubleSide}
-            transparent
-            opacity={0.8}
+            transparent={true}
+            opacity={1.0}
+            depthWrite={false}
           />
         </mesh>
       )}
