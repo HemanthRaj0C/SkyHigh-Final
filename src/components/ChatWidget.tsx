@@ -3,6 +3,16 @@
 import { useStore } from "@/store/useStore";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { 
+  Sparkles, 
+  X, 
+  Maximize2, 
+  Minimize2, 
+  Send, 
+  ArrowRight, 
+  User, 
+  Loader2 
+} from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -127,128 +137,78 @@ export default function ChatWidget() {
       <div className="relative z-10 flex flex-col h-full">
       
       {/* Header */}
-      <div className="relative p-6 border-b border-white/10 backdrop-blur-xl">
+      <div className="relative p-4 border-b border-white/10 backdrop-blur-xl">
         <div className="absolute inset-0 bg-linear-to-r from-purple-900/30 via-blue-900/20 to-indigo-900/30"></div>
         <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div>
-              <h3 className="font-bold text-xl tracking-tight bg-linear-to-r from-purple-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
+              <h3 className="font-bold text-lg tracking-tight bg-linear-to-r from-purple-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
                 Cosmos AI
               </h3>
               <p className="text-xs text-white/50 mt-0.5">Your personal astronomy guide</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => setIsFullScreen(!isFullScreen)}
-              className="text-white/40 hover:text-white hover:bg-purple-500/20 p-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/20"
+              className="text-white/40 hover:text-white hover:bg-purple-500/20 p-2 rounded-lg transition-all duration-200"
               title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
             >
               {isFullScreen ? (
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 9L4 4m0 0l5 0M4 4l0 5M15 9l5-5m0 0l-5 0m5 0l0 5M9 15l-5 5m0 0l5 0m-5 0l0-5M15 15l5 5m0 0l-5 0m5 0l0-5"
-                  />
-                </svg>
+                <Minimize2 className="w-4 h-4" />
               ) : (
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                  />
-                </svg>
+                <Maximize2 className="w-4 h-4" />
               )}
             </button>
             <button
               onClick={toggleChatWidget}
-              className="text-white/40 hover:text-white hover:bg-red-500/20 p-2.5 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-red-500/20"
+              className="text-white/40 hover:text-white hover:bg-red-500/20 p-2 rounded-lg transition-all duration-200"
               title="Close Chat"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         {messages.length === 0 ? (
-          <div className="space-y-8 mt-8">
-            <div className="text-center space-y-6">
+          <div className="space-y-6 mt-4">
+            <div className="text-center space-y-3">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold bg-linear-to-r from-purple-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
+                <h2 className="text-2xl font-bold bg-linear-to-r from-purple-300 via-blue-300 to-indigo-300 bg-clip-text text-transparent">
                   Welcome to Cosmos AI
                 </h2>
-                <p className="text-white/60 text-base max-w-md mx-auto">
+                <p className="text-white/60 text-sm max-w-md mx-auto">
                   Explore the wonders of the universe. Ask me anything about planets, stars, and space!
                 </p>
               </div>
             </div>
 
             {/* Suggested Questions */}
-            <div className="space-y-4">
-              <br />
-              <p className="text-xs text-white/40 uppercase font-bold tracking-wider text-center flex items-center justify-center gap-2">
-                <span className="h-px w-8 bg-linear-to-r from-transparent to-white/20"></span>
+            <div className="space-y-3">
+              <p className="text-xs text-white/40 uppercase font-semibold tracking-wider text-center flex items-center justify-center gap-2">
+                <span className="h-px w-6 bg-linear-to-r from-transparent to-white/20"></span>
                 Suggested Questions
-                <span className="h-px w-8 bg-linear-to-l from-transparent to-white/20"></span>
+                <span className="h-px w-6 bg-linear-to-l from-transparent to-white/20"></span>
               </p>
-              <div className="grid gap-3">
-                <br />
+              <div className="grid gap-2">
                 {suggestedQuestions.map((question, i) => (
                   <button
                     key={i}
                     onClick={() => handleSuggestedQuestion(question)}
-                    className="w-full text-left p-4 rounded-2xl bg-linear-to-r from-white/5 to-white/2 hover:from-purple-500/20 hover:to-blue-500/10
+                    className="w-full text-left p-3 rounded-xl bg-linear-to-r from-white/5 to-white/2 hover:from-purple-500/20 hover:to-blue-500/10
                                border border-white/10 hover:border-purple-500/40
-                               transition-all duration-300 text-sm text-white/70 hover:text-white
-                               group flex items-center justify-between shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02]"
+                               transition-all duration-200 text-sm text-white/70 hover:text-white
+                               group flex items-center justify-between hover:scale-[1.02]"
                     disabled={isLoading}
                   >
-                    <span className="flex items-center gap-3">
-                      <span className="text-purple-400 group-hover:text-purple-300 transition-colors">→</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-purple-400 group-hover:text-purple-300 transition-colors text-xs">→</span>
                       <span>{question}</span>
                     </span>
-                    <svg
-                      className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1 text-purple-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
+                    <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1 text-purple-400" />
                   </button>
                 ))}
               </div>
@@ -259,53 +219,40 @@ export default function ChatWidget() {
             {messages.map((message, i) => (
               <div
                 key={i}
-                className={`flex gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500 ${
+                className={`flex gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300 ${
                   message.role === "user" ? "justify-end" : "justify-start"
                 }`}
               >
                 {message.role === "assistant" && (
-                  <div className="w-8 h-8 rounded-xl bg-linear-to-br from-purple-600 to-blue-600 flex items-center justify-center shrink-0 shadow-lg">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
+                  <div className="w-7 h-7 rounded-lg bg-linear-to-br from-purple-600 to-blue-600 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed shadow-lg ${
+                  className={`max-w-[75%] p-3 rounded-xl text-sm leading-relaxed shadow-md ${
                     message.role === "user"
-                      ? "bg-linear-to-br from-purple-600/40 to-blue-600/30 text-white border border-purple-400/30 rounded-tr-md backdrop-blur-xl"
-                      : "bg-linear-to-br from-white/10 to-white/5 text-gray-100 border border-white/20 rounded-tl-md backdrop-blur-xl"
+                      ? "bg-linear-to-br from-purple-600/40 to-blue-600/30 text-white border border-purple-400/30 rounded-tr-sm backdrop-blur-xl"
+                      : "bg-linear-to-br from-white/10 to-white/5 text-gray-100 border border-white/20 rounded-tl-sm backdrop-blur-xl"
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
                 {message.role === "user" && (
-                  <div className="w-8 h-8 rounded-xl bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-lg">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                  <div className="w-7 h-7 rounded-lg bg-linear-to-br from-blue-600 to-indigo-700 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+                    <User className="w-3.5 h-3.5 text-white" />
                   </div>
                 )}
               </div>
             ))}
             {isLoading && (
-              <div className="flex justify-start gap-3 animate-in fade-in duration-500">
-                <div className="w-8 h-8 rounded-xl bg-linear-to-br from-purple-600 to-blue-600 flex items-center justify-center shrink-0 shadow-lg">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+              <div className="flex justify-start gap-2 animate-in fade-in duration-300">
+                <div className="w-7 h-7 rounded-lg bg-linear-to-br from-purple-600 to-blue-600 flex items-center justify-center shrink-0 shadow-md mt-0.5">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
                 </div>
-                <div className="bg-linear-to-br from-white/10 to-white/5 border border-white/20 p-4 rounded-2xl rounded-tl-md backdrop-blur-xl shadow-lg">
-                  <div className="flex gap-2">
-                    <span className="w-2 h-2 bg-linear-to-br from-purple-400 to-blue-400 rounded-full animate-bounce shadow-lg shadow-purple-500/50"></span>
-                    <span
-                      className="w-2 h-2 bg-linear-to-br from-purple-400 to-blue-400 rounded-full animate-bounce shadow-lg shadow-purple-500/50"
-                      style={{ animationDelay: "0.15s" }}
-                    ></span>
-                    <span
-                      className="w-2 h-2 bg-linear-to-br from-purple-400 to-blue-400 rounded-full animate-bounce shadow-lg shadow-purple-500/50"
-                      style={{ animationDelay: "0.3s" }}
-                    ></span>
+                <div className="bg-linear-to-br from-white/10 to-white/5 border border-white/20 p-3 rounded-xl rounded-tl-sm backdrop-blur-xl shadow-md">
+                  <div className="flex items-center gap-1">
+                    <Loader2 className="w-4 h-4 text-purple-400 animate-spin" />
+                    <span className="text-sm text-white/60">Thinking...</span>
                   </div>
                 </div>
               </div>
@@ -316,9 +263,9 @@ export default function ChatWidget() {
       </div>
 
       {/* Input Area */}
-      <div className="relative p-6 border-t border-white/10 backdrop-blur-xl">
+      <div className="relative p-4 border-t border-white/10 backdrop-blur-xl">
         <div className="absolute inset-0 bg-linear-to-t from-purple-900/20 via-blue-900/10 to-transparent"></div>
-        <form onSubmit={handleSubmit} className="relative flex gap-3">
+        <form onSubmit={handleSubmit} className="relative flex gap-2">
           <div className="flex-1 relative">
             <input
               ref={inputRef}
@@ -327,10 +274,10 @@ export default function ChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about space..."
               disabled={isLoading}
-              className="w-full bg-white/5 border border-white/20 rounded-2xl px-5 py-4
+              className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3
                        text-sm text-white placeholder-white/40
-                       focus:outline-none focus:border-purple-500/60 focus:bg-white/10 focus:shadow-lg focus:shadow-purple-500/20
-                       transition-all duration-300
+                       focus:outline-none focus:border-purple-500/60 focus:bg-white/10
+                       transition-all duration-200
                        disabled:opacity-50 backdrop-blur-xl"
             />
           </div>
@@ -339,25 +286,12 @@ export default function ChatWidget() {
             disabled={!input.trim() || isLoading}
             className="relative bg-linear-to-br from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500
                      text-white
-                     disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-purple-600 disabled:hover:to-blue-600
-                     px-6 py-4 rounded-2xl transition-all duration-300
-                     flex items-center justify-center shadow-lg hover:shadow-purple-500/40 hover:scale-105
-                     group overflow-hidden"
+                     disabled:opacity-50 disabled:cursor-not-allowed
+                     px-4 py-3 rounded-xl transition-all duration-200
+                     flex items-center justify-center hover:scale-105
+                     group"
           >
-            <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            <svg
-              className="w-5 h-5 relative z-10 transform group-hover:translate-x-1 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
-              />
-            </svg>
+            <Send className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
           </button>
         </form>
       </div>
