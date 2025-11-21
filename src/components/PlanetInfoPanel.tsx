@@ -511,7 +511,9 @@ export default function PlanetInfoPanel() {
       {/* Header */}
       <div className="relative border-b border-white/10">
         <div className="p-5 pr-14">
+          <br />
           <h2 className="text-2xl font-bold mb-1.5">{planetData.displayName}</h2>
+          <br />
           <p className="text-xs text-white/60">{planetData.description}</p>
         </div>
         <button

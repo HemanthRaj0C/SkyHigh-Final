@@ -84,17 +84,6 @@ export default function TimeControls() {
                   >
                     {preset.label}
                   </span>
-                  {preset.value !== -1 && preset.value !== 0 && (
-                    <span
-                      className={`text-xs ${
-                        isActive
-                          ? "text-white/80"
-                          : "text-white/40 group-hover:text-white/60"
-                      }`}
-                    >
-                      {preset.value}x
-                    </span>
-                  )}
                 </div>
 
                 {isActive && (
@@ -191,9 +180,6 @@ export default function TimeControls() {
           <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 translate-y-full mt-2">
             <div className="px-3 py-1 rounded-full bg-black/80 backdrop-blur-xl border border-white/20 shadow-lg">
               <div className="flex flex-col items-center">
-                <span className="text-white/50 text-[9px] font-medium uppercase tracking-wider">
-                  Speed
-                </span>
                 <span
                   className={`font-bold text-sm bg-gradient-to-r ${getSpeedColor()} bg-clip-text text-transparent`}
                 >
@@ -201,7 +187,8 @@ export default function TimeControls() {
                     ? "Paused"
                     : timeSpeed === -1
                     ? "Real"
-                    : `${timeSpeed}×`}
+                    : ''
+                  }
                 </span>
               </div>
             </div>
@@ -260,6 +247,7 @@ export default function TimeControls() {
                   handleSpeedChange(newValue);
                 }
               }}
+              suppressHydrationWarning
               className="relative w-full h-1 rounded-full appearance-none cursor-pointer bg-transparent
                          [&::-webkit-slider-thumb]:appearance-none
                          [&::-webkit-slider-thumb]:w-4

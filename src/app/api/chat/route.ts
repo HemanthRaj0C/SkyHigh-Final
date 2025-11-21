@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Gemini API key from environment
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     if (!apiKey) {
       console.error('GEMINI_API_KEY not found in environment variables');
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Call Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
